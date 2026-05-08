@@ -1,7 +1,61 @@
 #include "hal.h"
 #include <Arduino.h>
 
-#ifdef BOARD_TDISPLAY_S3
+#ifdef BOARD_ESP32C3_OLED
+
+// Button A: GPIO 3 (external tactile button, GND when pressed)
+// Button B: GPIO 7 (external tactile button, GND when pressed)
+// GPIO 9 (BO0) is a strapping pin — left for download mode only.
+#define BTN_A_PIN  3
+#define BTN_B_PIN  7
+#define LED_PIN    8   // Onboard blue LED
+#define SDA_PIN    5
+#define SCL_PIN    6
+
+U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, SCL_PIN, SDA_PIN);
+
+static bool prevA = false, prevB = false;
+static bool tapA  = false, tapB  = false;
+
+void halInit() {
+    Wire.begin(SDA_PIN, SCL_PIN, 400000);
+    u8g2.begin();
+    u8g2.setBusClock(400000);
+    u8g2.setContrast(255);
+
+    pinMode(BTN_A_PIN, INPUT_PULLUP);
+    pinMode(BTN_B_PIN, INPUT_PULLUP);
+    pinMode(LED_PIN, OUTPUT);
+    digitalWrite(LED_PIN, LOW);
+}
+
+void halUpdate() {
+    bool a = !digitalRead(BTN_A_PIN);
+    bool b = !digitalRead(BTN_B_PIN);
+    tapA = (a && !prevA);
+    tapB = (b && !prevB);
+    prevA = a;
+    prevB = b;
+}
+
+bool halBtnAWasPressed() { bool r = tapA; tapA = false; return r; }
+bool halBtnBWasPressed() { bool r = tapB; tapB = false; return r; }
+bool halBtnAIsPressed()  { return !digitalRead(BTN_A_PIN); }
+bool halBtnBIsPressed()  { return !digitalRead(BTN_B_PIN); }
+
+int halBatPercent() { return -1; } // No battery monitoring on this board
+
+void halSetBrightness(uint8_t level) {
+    static const uint8_t contrasts[] = {0, 64, 160, 255};
+    if (level == 0) {
+        u8g2.setPowerSave(1);
+    } else {
+        u8g2.setPowerSave(0);
+        u8g2.setContrast(contrasts[level]);
+    }
+}
+
+#elif defined(BOARD_TDISPLAY_S3)
 
 TFT_eSPI lcd;
 

@@ -1,10 +1,15 @@
 /*
  * Claude Code Usage Monitor — Standalone WiFi
- * Supports: M5StickC Plus, M5StickC Plus2, LilyGo T-Display S3
+ * Supports: M5StickC Plus, M5StickC Plus2, LilyGo T-Display S3, ESP32-C3-OLED
  *
  * Button A: cycle digit (PIN) / cycle brightness (dashboard)
  * Button B: confirm digit (PIN) / force refresh (dashboard)
  * A+B held on boot: factory reset → wipe NVS → re-enter setup
+ *
+ * ESP32-C3-OLED wiring (both buttons external, active-LOW to GND):
+ *   Button A → GPIO 3     Button B → GPIO 7
+ *   SDA → GPIO 5          SCL → GPIO 6
+ *   GPIO 9 (BO0): download mode only — do NOT wire a button here
  */
 
 #include "hal.h"

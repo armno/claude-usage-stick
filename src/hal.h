@@ -1,7 +1,11 @@
 #pragma once
 #include <stdint.h>
 
-#ifdef BOARD_TDISPLAY_S3
+#ifdef BOARD_ESP32C3_OLED
+  #include <U8g2lib.h>
+  #include <Wire.h>
+  extern U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2;
+#elif defined(BOARD_TDISPLAY_S3)
   #include <TFT_eSPI.h>
   extern TFT_eSPI lcd;
 #elif defined(BOARD_M5STICK_C_PLUS2)
