@@ -34,11 +34,11 @@ Use one of these supported boards:
 
 | Board | MCU | Display | Battery | Buy |
 | ----- | --- | ------- | ------- | --- |
-| M5StickC Plus | ESP32-PICO | 1.14" 240x135 | 120 mAh | [m5stack.com](https://shop.m5stack.com/products/m5stickc-plus-esp32-pico-mini-iot-development-kit) |
-| M5StickC Plus2 | ESP32-PICO-V3-02 | 1.14" 240x135 | 200 mAh | [m5stack.com](https://shop.m5stack.com/products/m5stickc-plus2-esp32-mini-iot-development-kit) |
-| LilyGo T-Display S3 | ESP32-S3 | 1.9" 320x170 LCD | 1300 mAh | [lilygo.cc](https://lilygo.cc/products/t-display-s3) |
-| LilyGo T-Display S3 AMOLED (1.91") | ESP32-S3 | 1.91" 240x536 AMOLED | varies | [lilygo.cc](https://lilygo.cc/products/t-display-s3-amoled) |
-| ESP32-C3-OLED | ESP32-C3 | 0.42" 72x40 OLED | external | [aliexpress.com](https://www.aliexpress.com/item/1005007929382296.html) |
+| M5StickC Plus | ESP32-PICO | 1.14" 240x135 | 120 mAh | [m5stack.com](https://shop.m5stack.com/products/m5stickc-plus-esp32-pico-mini-iot-development-kit) · [aliexpress.com](https://s.click.aliexpress.com/e/_c3w3hHWl) |
+| M5StickC Plus2 | ESP32-PICO-V3-02 | 1.14" 240x135 | 200 mAh | [m5stack.com](https://shop.m5stack.com/products/m5stickc-plus2-esp32-mini-iot-development-kit) · [aliexpress.com](https://s.click.aliexpress.com/e/_c3jkKlNj) |
+| LilyGo T-Display S3 | ESP32-S3 | 1.9" 320x170 LCD | 1300 mAh | [lilygo.cc](https://lilygo.cc/products/t-display-s3) · [aliexpress.com](https://s.click.aliexpress.com/e/_c4rvB1Mv) |
+| LilyGo T-Display S3 AMOLED (1.91") | ESP32-S3 | 1.91" 240x536 AMOLED | varies | [lilygo.cc](https://lilygo.cc/products/t-display-s3-amoled) · [aliexpress.com](https://s.click.aliexpress.com/e/_c3ZsWHBB) |
+| ESP32-C3-OLED | ESP32-C3 | 0.42" 72x40 OLED | external | [aliexpress.com](https://s.click.aliexpress.com/e/_c3JMxywv) |
 
 Plus any USB-C cable for flashing and power.
 
@@ -129,7 +129,7 @@ pio run -e esp32c3-oled -t uploadfs
 1. On first boot (or after factory reset), the device creates a WiFi access point named `ClaudeMonitor-XXXX`
 2. Connect your phone or laptop to that network
    - **LCD boards** — the password is shown on the device screen
-   - **ESP32-C3-OLED** — the AP is open (no password), since the OLED is too small to display one legibly
+   - **ESP32-C3-OLED** — a simple 8-digit password is shown on the OLED (`Pass:` line)
 3. Open `http://192.168.4.1` in a browser
 4. Fill in your WiFi credentials, OAuth token, and a 4–8 digit encryption PIN
 5. Hit **Save & Reboot** — the device encrypts the token, stores it, and connects to your WiFi
