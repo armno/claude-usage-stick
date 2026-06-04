@@ -31,6 +31,10 @@
   #define SCREEN_W              240
   #define SCREEN_H              135
   #define SCREEN_ROT            3
+#elif defined(BOARD_CROWPANEL_ADV_35)
+  #define SCREEN_W              480
+  #define SCREEN_H              320
+  #define SCREEN_ROT            3
 #else
   #define SCREEN_W              240
   #define SCREEN_H              135

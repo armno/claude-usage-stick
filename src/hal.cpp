@@ -303,6 +303,72 @@ void halClear(uint16_t color) {
     for (uint32_t i = 0; i < pixels; i++) buf[i] = color;
 }
 
+#elif defined(BOARD_CROWPANEL_ADV_35)
+
+// Elecrow CrowPanel Advance 3.5" HMI (ESP32-S3, 480x320 IPS, ILI9488 over SPI).
+// It has no physical user buttons — input is the GT911 capacitive touch panel,
+// split into two zones: a tap on the LEFT half acts as Button A (cycle digit /
+// brightness), the RIGHT half as Button B (confirm / refresh). This matches the
+// on-screen "tap left / tap right" legend positions. The A+B factory-reset combo needs
+// two buttons and is unavailable here (a single touch point is read); re-flash to wipe NVS.
+TFT_eSPI lcd;
+
+#define BL_PIN     38
+#define TOUCH_SDA  15
+#define TOUCH_SCL  16
+#define CP_W       480   // landscape width  (mirrors SCREEN_W in config.h)
+#define CP_H       320   // landscape height (mirrors SCREEN_H in config.h)
+
+// GT911 over I2C; INT/RST are not broken out on this board (-1).
+TAMC_GT911 touch(TOUCH_SDA, TOUCH_SCL, -1, -1, CP_W, CP_H);
+
+static bool prevTouch = false;
+static bool tapA = false, tapB = false;
+static bool downA = false, downB = false;
+
+void halInit() {
+    lcd.init();
+    lcd.invertDisplay(true);   // ILI9488 panel runs inverted (per Elecrow's driver)
+    ledcSetup(0, 5000, 8);
+    ledcAttachPin(BL_PIN, 0);
+    ledcWrite(0, 200);
+
+    Wire.begin(TOUCH_SDA, TOUCH_SCL);
+    touch.begin();
+    // Read raw GT911 coordinates and map zones manually — the library's rotation
+    // transforms underflow when the panel's native axes don't match width/height.
+    touch.setRotation(ROTATION_INVERTED);
+}
+
+void halUpdate() {
+    touch.read();
+    bool down = touch.isTouched;
+    if (down && !prevTouch) {                          // new finger press (rising edge)
+        // Raw GT911 axes: points[].y is the horizontal screen axis (left ~479 .. right ~0,
+        // inverted); points[].x is vertical. Split on the horizontal midpoint.
+        if (touch.points[0].y > (CP_W / 2)) { tapA = true; downA = true; downB = false; }  // left half
+        else                                { tapB = true; downB = true; downA = false; }  // right half
+    }
+    if (!down) { downA = false; downB = false; }
+    prevTouch = down;
+}
+
+bool halBtnAWasPressed() { bool r = tapA; tapA = false; return r; }
+bool halBtnBWasPressed() { bool r = tapB; tapB = false; return r; }
+bool halBtnAIsPressed()  { return downA; }
+bool halBtnBIsPressed()  { return downB; }
+
+int halBatPercent() { return -1; }  // no battery-sense ADC on this board
+
+void halSetBrightness(uint8_t level) {
+    static const uint8_t vals[] = {0, 60, 160, 255};
+    ledcWrite(0, vals[level]);
+}
+
+void halFlush() {}
+
+void halClear(uint16_t color) { lcd.fillScreen(color); }
+
 #elif defined(BOARD_M5STICK_C_PLUS2)
 
 #define HOLD_PIN 4

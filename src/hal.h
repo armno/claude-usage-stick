@@ -16,6 +16,11 @@
 #elif defined(BOARD_T8_S2)
   #include <TFT_eSPI.h>
   extern TFT_eSPI lcd;
+#elif defined(BOARD_CROWPANEL_ADV_35)
+  #include <TFT_eSPI.h>
+  #include <Wire.h>
+  #include <TAMC_GT911.h>
+  extern TFT_eSPI lcd;
 #elif defined(BOARD_TDISPLAY_S3_AMOLED)
   #include <LilyGo_AMOLED.h>
   #include <TFT_eSPI.h>

@@ -431,6 +431,15 @@ void uiPinScreen(int pos, const int digits[4]) {
     lcd.setCursor(SX(35), SY(118));
     lcd.setTextColor(0x4A49, C_BG);
     lcd.print("short tap = A    long press = B");
+#elif defined(BOARD_CROWPANEL_ADV_35)
+    // Touch HMI: tapping the left half of the screen cycles the digit, the right half confirms.
+    lcd.print("tap left: digit");
+    lcd.setCursor(SX(148), SY(95));
+    lcd.print("tap right: confirm");
+
+    lcd.setCursor(SX(35), SY(118));
+    lcd.setTextColor(0x4A49, C_BG);
+    lcd.print("re-flash to factory reset");
 #else
     lcd.print("[A] cycle digit");
     lcd.setCursor(SX(148), SY(95));
