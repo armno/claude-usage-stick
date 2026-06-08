@@ -2,11 +2,12 @@
 
 A tiny standalone device that shows your [Claude Code](https://docs.anthropic.com/en/docs/claude-code) rate-limit usage in real time. Polls the Anthropic API and displays your 5-hour and 7-day usage windows, reset countdowns, signal strength, and battery level.
 
-Supports seven boards:
+Supports eight boards:
 - **M5StickC Plus** (ESP32-PICO, 240x135 LCD)
 - **M5StickC Plus2** (ESP32-PICO-V3-02, 240x135 LCD)
 - **LilyGo T-Display S3** (ESP32-S3, 320x170 LCD)
 - **LilyGo T8 ESP32-S2** (ESP32-S2, 1.14" 135x240 ST7789 LCD)
+- **Elecrow CrowPanel Advance 3.5" HMI** (ESP32-S3, 480x320 IPS ILI9488 + GT911 touch)
 - **LilyGo T-Display S3 AMOLED** 1.91" (ESP32-S3, 240x536 RM67162 AMOLED — H712/H713/H705/H681/H717)
 - **TTGO T-Display ESP32** (ESP32, 1.14" 135x240 ST7789 LCD)
 - **ESP32-C3-OLED** (ESP32-C3, 0.42" 72x40 OLED) — breadboard-friendly; bring your own buttons
@@ -40,6 +41,7 @@ Use one of these supported boards:
 | M5StickC Plus2 | ESP32-PICO-V3-02 | 1.14" 240x135 | 200 mAh | ✅ | [aliexpress.com](https://s.click.aliexpress.com/e/_c3jkKlNj) |
 | LilyGo T-Display S3 | ESP32-S3 | 1.9" 320x170 LCD | 1300 mAh | ✅ | [aliexpress.com](https://s.click.aliexpress.com/e/_c4rvB1Mv) |
 | LilyGo T8 ESP32-S2 | ESP32-S2 | 1.14" 135x240 LCD | external (JST) | ✅ | [aliexpress.com](https://s.click.aliexpress.com/e/_c2w1HnpJ) |
+| Elecrow CrowPanel Advance 3.5" HMI | ESP32-S3 | 3.5" 480x320 IPS (touch) | external | ✅¹ | [elecrow.com](https://www.elecrow.com/crowpanel-advance-3-5-hmi-esp32-ai-display-480x320-artificial-intelligent-ips-touch-screen.html) |
 | LilyGo T-Display S3 AMOLED (1.91") | ESP32-S3 | 1.91" 240x536 AMOLED | varies | ✅ | [aliexpress.com](https://s.click.aliexpress.com/e/_c3XNB9Hx) |
 | TTGO T-Display ESP32 | ESP32 | 1.14" 240x135 LCD | external (JST 1.25mm) | ✅ | [aliexpress.com](https://s.click.aliexpress.com/e/_c32HlGQ1) |
 | ESP32-C3-OLED | ESP32-C3 | 0.42" 72x40 OLED | external | ✅ | [aliexpress.com](https://s.click.aliexpress.com/e/_c3JMxywv) |
@@ -51,6 +53,8 @@ Use one of these supported boards:
 > - **One button, two roles** — the board exposes only the onboard **BOOT** button (GPIO0), so controls are split by press length: **short tap = Button A** (cycle digit / brightness), **long press = Button B** (confirm digit / refresh).
 > - **No on-boot factory reset** — GPIO0 is a strapping pin, so "hold A+B on boot" is unavailable; re-flash to wipe NVS.
 > - **No battery readout** — there's no confirmed battery-sense ADC, so battery percentage isn't shown.
+
+> ¹ **CrowPanel Advance 3.5":** this is a touch-only HMI with no physical user buttons, so the two-button UX maps to touch zones — **tap the LEFT half of the screen for Button A** (cycle digit / brightness) and the **RIGHT half for Button B** (confirm digit / refresh). The hold-A+B factory reset is unavailable; re-flash to wipe NVS. Battery % is not shown.
 
 Plus any USB-C cable for flashing and power.
 
@@ -123,6 +127,10 @@ pio run -e tdisplay-s3 -t uploadfs
 # LilyGo T8 ESP32-S2 (1.14" ST7789 LCD)
 pio run -e t8-s2 -t upload
 pio run -e t8-s2 -t uploadfs
+
+# Elecrow CrowPanel Advance 3.5" HMI (ILI9488 + GT911 touch)
+pio run -e crowpanel-adv-35 -t upload
+pio run -e crowpanel-adv-35 -t uploadfs
 
 # LilyGo T-Display S3 AMOLED 1.91" (H712/H713/H705/H681/H717)
 pio run -e tdisplay-s3-amoled -t upload
