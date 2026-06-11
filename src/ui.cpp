@@ -408,15 +408,42 @@ static void drawMascotRow(TFT_eSPI& g) {
     }
 }
 
-static void drawBatteryIcon(TFT_eSPI& g, int x, int y, int pct) {
-    g.drawRect(x, y, 18, 10, C_TEXT);
-    g.fillRect(x + 18, y + 3, 2, 4, C_TEXT);
-    int fw = 14 * constrain(pct, 0, 100) / 100;
-    if (fw > 0) g.fillRect(x + 2, y + 2, fw, 6, C_TEXT);
+#define C_HEAD_DK 0xA244   // dimmed Claude orange — empty wifi bars on the header
+
+static void drawWifiIcon(TFT_eSPI& g, int x, int rssi) {
+    int level = (rssi >= -55) ? 4 : (rssi >= -65) ? 3 : (rssi >= -75) ? 2 : (rssi >= -85) ? 1 : 0;
+    for (int i = 0; i < 4; i++) {
+        int h = 3 * (i + 1);
+        g.fillRect(x + i * 4, 14 - h, 3, h, (level > i) ? C_TEXT : C_HEAD_DK);
+    }
+}
+
+// Right side of the header, anchored to the right edge: [ago] [wifi] [battery+pct].
+// Repainted whole by uiDashboardClock every 10s, so everything here must be
+// derivable from its arguments.
+static void drawHeaderRight(TFT_eSPI& g, int rssi, unsigned long ago, int batPct) {
     g.setTextColor(C_TEXT, C_HEAD);
     g.setTextSize(1);
-    g.setCursor(x + 24, y + 1);
-    g.printf("%d%%", pct);
+
+    char ps[8];
+    snprintf(ps, sizeof(ps), "%d%%", batPct);
+    int x = SCREEN_W - 4 - (int)strlen(ps) * 6;
+    g.setCursor(x, 5);
+    g.print(ps);
+
+    x -= 24;   // battery: 18 body + 2 nub + 4 gap before the text
+    g.drawRect(x, 4, 18, 10, C_TEXT);
+    g.fillRect(x + 18, 7, 2, 4, C_TEXT);
+    int fw = 14 * constrain(batPct, 0, 100) / 100;
+    if (fw > 0) g.fillRect(x + 2, 6, fw, 6, C_TEXT);
+
+    x -= 21;   // wifi: 15 wide + 6 gap
+    drawWifiIcon(g, x, rssi);
+
+    char as[12];
+    snprintf(as, sizeof(as), "%lus", ago);
+    g.setCursor(x - 6 - (int)strlen(as) * 6, 5);
+    g.print(as);
 }
 #endif // BOARD_TDISPLAY_S3
 
@@ -610,14 +637,13 @@ void uiDashboard(const UsageData& data, unsigned long lastFetchMs, int rssi, int
     g.print("CLAUDE USAGE");
 
     unsigned long ago = (millis() - lastFetchMs) / 1000;
+#ifdef BOARD_TDISPLAY_S3
+    drawHeaderRight(g, rssi, ago, batPct);
+#else
     char hdr[32];
     snprintf(hdr, sizeof(hdr), "%ddBm %lus", rssi, ago);
     g.setCursor(SCREEN_W - strlen(hdr) * TS(6) - SX(4), SY(5));
     g.print(hdr);
-
-#ifdef BOARD_TDISPLAY_S3
-    // Left header half only — the 10s clock repaint covers x >= SCREEN_W/2.
-    drawBatteryIcon(g, 96, 4, batPct);
 #endif
 
     if (!data.ok) {
@@ -682,13 +708,17 @@ void uiDashboardClock(const UsageData& data, unsigned long lastFetchMs, int rssi
 
     // Header "rssi / ago": repaint the header band over its own colour.
     unsigned long ago = (millis() - lastFetchMs) / 1000;
-    char hdr[32];
-    snprintf(hdr, sizeof(hdr), "%ddBm %lus", rssi, ago);
     g.fillRect(SCREEN_W / 2, 0, SCREEN_W / 2, SY(18), C_HEAD);
     g.setTextColor(C_TEXT, C_HEAD);
     g.setTextSize(TS(1));
+#ifdef BOARD_TDISPLAY_S3
+    drawHeaderRight(g, rssi, ago, halBatPercent());
+#else
+    char hdr[32];
+    snprintf(hdr, sizeof(hdr), "%ddBm %lus", rssi, ago);
     g.setCursor(SCREEN_W - strlen(hdr) * TS(6) - SX(4), SY(5));
     g.print(hdr);
+#endif
 
     // Reset countdowns: padded, opaque print overwrites in place.
     char h5rst[16], d7rst[16];
