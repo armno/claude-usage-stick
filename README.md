@@ -22,6 +22,15 @@ Supports eight boards:
   <img src="docs/esp32-c3-oled.jpg" width="400" alt="ESP32-C3-OLED running Claude Usage Stick">
 </p>
 
+## Versions
+
+Firmware releases carry names. Each board's current version is listed in the [Hardware](#hardware) table.
+
+| Version | Name | Boards | Highlights |
+| ------- | ---- | ------ | ---------- |
+| v1 | **Clarity** | All supported boards | Usage bars, reset countdowns, PIN unlock, captive-portal setup |
+| v2 | **Mango** | LilyGo T-Display S3 only | Everything in Clarity, plus: Claude model status mascots (Haiku / Sonnet / Opus / Fable health from [status.claude.com](https://status.claude.com) — a downed model turns gray with X eyes, healthy ones blink), battery and WiFi-signal icons in the header, dashboard-styled PIN screen, and screen rotation on Button A |
+
 ## Features
 
 - **Live usage bars** for the 5-hour and 7-day rate-limit windows
@@ -30,22 +39,24 @@ Supports eight boards:
 - **Captive-portal setup** — connect your phone to the device's WiFi AP and configure everything in a browser
 - **Battery & signal info** shown on the dashboard
 - **Button controls** — cycle brightness (A), force refresh (B), factory reset (hold A+B on boot)
+- **Model status mascots** *(Mango)* — four Clawd mascots track Haiku / Sonnet / Opus / Fable health from the Claude status page
+- **Header icons** *(Mango)* — battery level and WiFi signal strength as icons in the header bar
 
 ## Hardware
 
 Use one of these supported boards:
 
-| Board | MCU | Display | Battery | Supported | Buy |
-| ----- | --- | ------- | ------- | --------- | --- |
-| M5StickC Plus | ESP32-PICO | 1.14" 240x135 | 120 mAh | ✅ | [aliexpress.com](https://s.click.aliexpress.com/e/_c3w3hHWl) |
-| M5StickC Plus2 | ESP32-PICO-V3-02 | 1.14" 240x135 | 200 mAh | ✅ | [aliexpress.com](https://s.click.aliexpress.com/e/_c3jkKlNj) |
-| LilyGo T-Display S3 | ESP32-S3 | 1.9" 320x170 LCD | 1300 mAh | ✅ | [aliexpress.com](https://s.click.aliexpress.com/e/_c4rvB1Mv) |
-| LilyGo T8 ESP32-S2 | ESP32-S2 | 1.14" 135x240 LCD | external (JST) | ✅ | [aliexpress.com](https://s.click.aliexpress.com/e/_c2w1HnpJ) |
-| Elecrow CrowPanel Advance 3.5" HMI | ESP32-S3 | 3.5" 480x320 IPS (touch) | external | ✅¹ | [elecrow.com](https://www.elecrow.com/crowpanel-advance-3-5-hmi-esp32-ai-display-480x320-artificial-intelligent-ips-touch-screen.html) |
-| LilyGo T-Display S3 AMOLED (1.91") | ESP32-S3 | 1.91" 240x536 AMOLED | varies | ✅ | [aliexpress.com](https://s.click.aliexpress.com/e/_c3XNB9Hx) |
-| TTGO T-Display ESP32 | ESP32 | 1.14" 240x135 LCD | external (JST 1.25mm) | ✅ | [aliexpress.com](https://s.click.aliexpress.com/e/_c32HlGQ1) |
-| ESP32-C3-OLED | ESP32-C3 | 0.42" 72x40 OLED | external | ✅ | [aliexpress.com](https://s.click.aliexpress.com/e/_c3JMxywv) |
-| M5Stack StickS3 | — | — | — | 🚧 In progress | [aliexpress.com](https://s.click.aliexpress.com/e/_c3ZsWHBB) |
+| Board | MCU | Display | Battery | Supported | Version | Buy |
+| ----- | --- | ------- | ------- | --------- | ------- | --- |
+| M5StickC Plus | ESP32-PICO | 1.14" 240x135 | 120 mAh | ✅ | Clarity (v1) | [aliexpress.com](https://s.click.aliexpress.com/e/_c3w3hHWl) |
+| M5StickC Plus2 | ESP32-PICO-V3-02 | 1.14" 240x135 | 200 mAh | ✅ | Clarity (v1) | [aliexpress.com](https://s.click.aliexpress.com/e/_c3jkKlNj) |
+| LilyGo T-Display S3 | ESP32-S3 | 1.9" 320x170 LCD | 1300 mAh | ✅ | **Mango (v2)** | [aliexpress.com](https://s.click.aliexpress.com/e/_c4rvB1Mv) |
+| LilyGo T8 ESP32-S2 | ESP32-S2 | 1.14" 135x240 LCD | external (JST) | ✅ | Clarity (v1) | [aliexpress.com](https://s.click.aliexpress.com/e/_c2w1HnpJ) |
+| Elecrow CrowPanel Advance 3.5" HMI | ESP32-S3 | 3.5" 480x320 IPS (touch) | external | ✅¹ | Clarity (v1) | [elecrow.com](https://www.elecrow.com/crowpanel-advance-3-5-hmi-esp32-ai-display-480x320-artificial-intelligent-ips-touch-screen.html) |
+| LilyGo T-Display S3 AMOLED (1.91") | ESP32-S3 | 1.91" 240x536 AMOLED | varies | ✅ | Clarity (v1) | [aliexpress.com](https://s.click.aliexpress.com/e/_c3XNB9Hx) |
+| TTGO T-Display ESP32 | ESP32 | 1.14" 240x135 LCD | external (JST 1.25mm) | ✅ | Clarity (v1) | [aliexpress.com](https://s.click.aliexpress.com/e/_c32HlGQ1) |
+| ESP32-C3-OLED | ESP32-C3 | 0.42" 72x40 OLED | external | ✅ | Clarity (v1) | [aliexpress.com](https://s.click.aliexpress.com/e/_c3JMxywv) |
+| M5Stack StickS3 | — | — | — | 🚧 In progress | — | [aliexpress.com](https://s.click.aliexpress.com/e/_c3ZsWHBB) |
 
 > **T8 ESP32-S2 notes**
 >
@@ -176,6 +187,8 @@ Once unlocked, the dashboard appears and auto-refreshes.
 | A | Cycle screen brightness (off → dim → normal → bright); ESP32-C3-OLED: toggle on/off only |
 | B | Force an immediate refresh |
 | A+B held on boot | Factory reset (wipes all stored data) |
+
+> **Mango (T-Display S3):** Button A rotates the screen 180° and Button B cycles brightness; refresh happens automatically on the poll interval.
 
 ## Project Structure
 
