@@ -243,6 +243,20 @@ void loop() {
         refresh();
     }
 
+#ifdef BOARD_TDISPLAY_S3
+    // Healthy mascots blink every 2s (eyes shut for 150ms) to show liveness.
+    static unsigned long lastBlink = 0;
+    static bool eyesClosed = false;
+    if (eyesClosed && millis() - lastBlink > 150) {
+        uiBlinkTick(false);
+        eyesClosed = false;
+    } else if (!eyesClosed && usage.ok && millis() - lastBlink > 2000) {
+        uiBlinkTick(true);
+        eyesClosed = true;
+        lastBlink = millis();
+    }
+#endif
+
     static unsigned long lastRedraw = 0;
     if (millis() - lastRedraw > 10000) {
         // Only time passed (not data) — update the clock/countdowns in place; redrawing

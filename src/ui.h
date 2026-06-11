@@ -20,4 +20,6 @@ void uiLockout(int attempts, int maxAttempts, int lockoutSec);
 void uiSetModelStatus(const ModelStatus& s);
 // Flip the panel 180° (and clear it); caller redraws the current screen.
 void uiToggleRotation();
+// Close (true) or open (false) the healthy mascots' eyes on the dashboard.
+void uiBlinkTick(bool closed);
 #endif

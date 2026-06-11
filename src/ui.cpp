@@ -399,6 +399,12 @@ static void drawMascot(TFT_eSPI& g, int x, int y, int s, uint16_t color, bool de
     }
 }
 
+// Mascot row geometry, shared by the full draw and the blink tick.
+#define MASCOT_S    3                    // cell width (height is 2x)
+#define MASCOT_Y    120
+#define MASCOT_X(i) (40 + (i) * 80 - 27)
+static const int CLAWD_EYE_COLS[2] = {5, 12};
+
 static void drawMascotRow(TFT_eSPI& g) {
     static const char* names[4] = {"HAIKU", "SONNET", "OPUS", "FABLE"};
     bool up[4] = {s_modelStatus.haikuUp, s_modelStatus.sonnetUp,
@@ -409,11 +415,32 @@ static void drawMascotRow(TFT_eSPI& g) {
         // status-page outage is never mistaken for a model outage.
         bool dead = s_modelStatus.ok && !up[i];
         uint16_t col = (!s_modelStatus.ok || dead) ? C_DIM : C_HEAD;
-        drawMascot(g, cx - 27, 120, 3, col, dead);
+        drawMascot(g, MASCOT_X(i), MASCOT_Y, MASCOT_S, col, dead);
         g.setTextColor(C_DIM, C_BG);
         g.setTextSize(1);
         g.setCursor(cx - (int)strlen(names[i]) * 3, 154);
         g.print(names[i]);
+    }
+}
+
+// Repaint only the eye cells of the healthy mascots — 18px per eye, drawn
+// straight to the panel, so the 2s "I'm alive" blink costs no full redraw.
+void uiBlinkTick(bool closed) {
+    bool up[4] = {s_modelStatus.haikuUp, s_modelStatus.sonnetUp,
+                  s_modelStatus.opusUp,  s_modelStatus.fableUp};
+    int ch = MASCOT_S * 2;
+    int ey = MASCOT_Y + ch;   // eye row 1
+    for (int i = 0; i < 4; i++) {
+        if (!s_modelStatus.ok || !up[i]) continue;   // dead/unknown don't blink
+        for (int e = 0; e < 2; e++) {
+            int ex = MASCOT_X(i) + CLAWD_EYE_COLS[e] * MASCOT_S;
+            if (closed) {
+                lcd.fillRect(ex, ey, MASCOT_S, ch, C_HEAD);          // lid down
+                lcd.fillRect(ex, ey + ch / 2 - 1, MASCOT_S, 2, C_BG); // shut line
+            } else {
+                lcd.fillRect(ex, ey, MASCOT_S, ch, C_BG);            // eye open
+            }
+        }
     }
 }
 
