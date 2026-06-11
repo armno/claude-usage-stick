@@ -8,7 +8,7 @@ Part of [Claude Usage Stick](../README.md). The biggest small-format screen in t
 | --- | --- |
 | MCU | ESP32-S3 (dual-core, WiFi, 8 MB PSRAM) |
 | Display | 1.9" ST7789 LCD, 320×170, 8-bit parallel |
-| Battery | JST connector (e.g. 1300 mAh pouch cell) |
+| Battery | External via JST connector (not included) |
 | Buttons | Button A (BOOT, GPIO 0) · Button B (KEY, GPIO 14) |
 | Firmware | 🥭 **Mango (v2)** — display tier **L** (reference board) |
 | PlatformIO env | `tdisplay-s3` |
