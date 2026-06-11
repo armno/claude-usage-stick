@@ -536,9 +536,8 @@ void uiPinScreen(int pos, const int digits[4]) {
     g.print("CLAUDE USAGE");
     g.setCursor(SCREEN_W - 4 - 6 * 6, 5);
     g.print("LOCKED");
-    drawMascot(g, (SCREEN_W - 54) / 2, 24, 3, C_HEAD, false);
     g.setTextColor(C_DIM, C_BG);
-    g.setCursor((SCREEN_W - 10 * 6) / 2, 46);
+    g.setCursor((SCREEN_W - 10 * 6) / 2, 49);
     g.print("UNLOCK PIN");
 #else
     g.setTextColor(C_DIM, C_BG);
@@ -550,7 +549,7 @@ void uiPinScreen(int pos, const int digits[4]) {
     int boxW = SX(30), boxH = SY(36), gap = SX(12);
     int startX = (SCREEN_W - (4 * boxW + 3 * gap)) / 2;
 #ifdef BOARD_TDISPLAY_S3
-    int boxY = 58;   // pushed down to clear the header + mascot
+    int boxY = (SCREEN_H - boxH) / 2;   // dead-center of the screen
 #else
     int boxY = SY(40);
 #endif
@@ -575,7 +574,7 @@ void uiPinScreen(int pos, const int digits[4]) {
     }
 
 #ifdef BOARD_TDISPLAY_S3
-    const int hintY = 104;   // below the relocated boxes
+    const int hintY = 115;   // below the centered boxes (67..103)
 #else
     const int hintY = SY(95);
 #endif
@@ -619,7 +618,7 @@ void uiPinScreen(int pos, const int digits[4]) {
 
     static const char* note = "Hold A+B on boot = factory reset";
     g.setTextColor(0x4A49, C_BG);
-    g.setCursor((SCREEN_W - (int)strlen(note) * 6) / 2, 126);
+    g.setCursor((SCREEN_W - (int)strlen(note) * 6) / 2, 135);
     g.print(note);
 #else
     g.print("[A] cycle digit");
