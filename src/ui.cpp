@@ -726,7 +726,11 @@ void uiDashboard(const UsageData& data, unsigned long lastFetchMs, int rssi, int
         g.setCursor(SX(10), SY(60));
         g.print(data.error);
         g.setCursor(SX(10), SY(80));
+#ifdef BOARD_TDISPLAY_S3
+        g.print("retrying automatically...");   // B is brightness on this board
+#else
         g.print("[B] retry now");
+#endif
         UI_PUSH_DASH();
         return;
     }
