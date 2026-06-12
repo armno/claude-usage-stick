@@ -11,7 +11,8 @@
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](#-license)
 [![PRs](https://img.shields.io/badge/PRs-welcome-D97757?style=flat-square)](https://github.com/oauramos/claude-usage-stick/pulls)
 
-<img src="assets/hero.jpg" width="720" alt="Claude Usage Stick — PIN unlock screen and usage dashboard on a LilyGo T-Display S3">
+<img src="https://github.com/user-attachments/assets/c51c5a9e-5a3e-4c3e-97a8-d5a4c5a44263" width="720" alt="Claude Usage Stick — PIN unlock screen and usage dashboard on a LilyGo T-Display S3"/>
+
 
 *5-hour & 7-day usage windows · reset countdowns · model health mascots · PIN-encrypted token*
 
