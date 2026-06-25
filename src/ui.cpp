@@ -288,6 +288,8 @@ void uiDashboardClock(const UsageData& data, unsigned long lastFetchMs, int rssi
 #define C_ACCENT  0xEB87
 #define C_CYAN    0xF50A   // light warm orange
 #define C_HEAD_DK 0xA244   // dimmed Claude orange — empty wifi bars, hairline dividers
+#define C_SONNET  0xB542   // dimmed yellow (~RGB 180,170,20) — Sonnet mascot
+#define C_HAIKU   0xCB33   // dimmed pink (~#CC6699) — Haiku mascot
 
 // The base layout is designed for the ~240x135 LCD. Larger panels scale the
 // coordinates and font up so text stays readable and the layout fills the screen.
@@ -462,6 +464,10 @@ static void drawMascot(TFT_eSPI& g, int x, int y, int W, int rh, uint16_t color,
 #define MASCOT_CX(i) (MASCOT_CX0 + (i) * MASCOT_SPACING)
 #define MASCOT_X(i)  (MASCOT_CX(i) - MASCOT_W / 2)
 
+// Per-model mascot colour when healthy (HAIKU, SONNET, OPUS, FABLE).
+// Opus + Fable keep Claude orange; a dead/unknown model overrides this with C_DIM.
+static const uint16_t MASCOT_COLORS[4] = {C_HAIKU, C_SONNET, C_HEAD, C_HEAD};
+
 // Size-2 countdown values — padded, opaque print overwrites in place so the
 // 10s clock tick can repaint them without clearing first.
 static void drawResetValues(TFT_eSPI& g, const char* h5rst, const char* d7rst) {
@@ -492,7 +498,7 @@ static void drawStatusPanel(TFT_eSPI& g) {
         // Unknown (status never fetched) renders gray without X eyes, so a
         // status-page outage is never mistaken for a model outage.
         bool dead = s_modelStatus.ok && !up[i];
-        uint16_t col = (!s_modelStatus.ok || dead) ? C_DIM : C_HEAD;
+        uint16_t col = (!s_modelStatus.ok || dead) ? C_DIM : MASCOT_COLORS[i];
         drawMascot(g, MASCOT_X(i), MASCOT_Y, MASCOT_W, MASCOT_RH, col, dead);
         g.setTextColor(C_DIM, C_BG);
         g.setTextSize(1);
@@ -514,7 +520,7 @@ void uiBlinkTick(bool closed) {
             int ew = mascotEdge(CLAWD_EYE_COLS[e] + 1, MASCOT_W) -
                      mascotEdge(CLAWD_EYE_COLS[e], MASCOT_W);
             if (closed) {
-                lcd.fillRect(ex, ey, ew, MASCOT_RH, C_HEAD);                  // lid down
+                lcd.fillRect(ex, ey, ew, MASCOT_RH, MASCOT_COLORS[i]);        // lid down
                 lcd.fillRect(ex, ey + MASCOT_RH / 2 - 1, ew, 2, C_BG);        // shut line
             } else {
                 lcd.fillRect(ex, ey, ew, MASCOT_RH, C_BG);                    // eye open
@@ -740,7 +746,7 @@ void uiPinScreen(int pos, const int digits[4]) {
     g.setTextColor(C_TEXT, C_HEAD);
     g.setTextSize(1);
     g.setCursor(4, 5);
-    g.print("CLAUDE USAGE");
+    g.print("ARMNO'S CLAUDEOMETER");
     g.setCursor(SCREEN_W - 4 - 6 * 6, 5);
     g.print("LOCKED");
     g.setTextColor(C_DIM, C_BG);
@@ -867,7 +873,7 @@ void uiDashboard(const UsageData& data, unsigned long lastFetchMs, int rssi, int
     g.setTextColor(C_TEXT, C_HEAD);
     g.setTextSize(TS(1));
     g.setCursor(SX(4), SY(5));
-    g.print("CLAUDE USAGE");
+    g.print("ARMNO'S CLAUDEOMETER");
 
     unsigned long ago = (millis() - lastFetchMs) / 1000;
 #ifdef MANGO_UI
