@@ -111,7 +111,9 @@ static void refresh() {
     static int prevAlertLevel = 0;
     int level = usage.ok ? alertLevelFor(usage.h5) : 0;
     uiSetAlertLevel(level);
-    if (level >= 2 && prevAlertLevel < 2) uiAlertFlash();   // fires once on the crossing
+    // Fires once on the OK/warn->crit crossing; the uiRenderPage() call later in
+    // refresh() repaints over the red flash. Keep that render after this block.
+    if (level >= 2 && prevAlertLevel < 2) uiAlertFlash();
     prevAlertLevel = level;
     uiRenderPage(currentPage, usage, lastFetch, WiFi.RSSI(), halBatPercent());
 #else
