@@ -1,6 +1,7 @@
 #include "ui.h"
 #include "config.h"
 #include "hal.h"
+#include "history.h"
 #include <time.h>
 
 // Shared helper — no display calls, safe before any #ifdef
@@ -752,11 +753,53 @@ static void uiPageModels(const UsageData& data, unsigned long lastFetchMs, int r
     halFlush();
 }
 
+static void uiPageHistory(const UsageData& data, unsigned long lastFetchMs, int rssi, int batPct) {
+    auto& g = lcd;
+    halClear(C_BG);
+    unsigned long ago = (millis() - lastFetchMs) / 1000;
+    drawTopBar(g, rssi, ago, batPct);
+
+    const int px = SX(10), py = SY(28), pw = SCREEN_W - SX(20), ph = SY(80);
+    g.drawRect(px, py, pw, ph, C_HEAD_DK);
+
+    uint16_t n = historyCount();
+    if (n < 2) {
+        g.setTextColor(C_DIM, C_BG);
+        g.setTextSize(1);
+        g.setCursor(px + 8, py + ph / 2 - 4);
+        g.print("collecting samples...");
+    } else {
+        int prevX = 0, prevY = 0;
+        for (uint16_t i = 0; i < n; i++) {
+            int x = px + (int)((uint32_t)i * (pw - 1) / (n - 1));
+            int y = py + ph - 1 - (int)((uint32_t)historyAt(i) * (ph - 2) / 100);
+            if (i > 0) g.drawLine(prevX, prevY, x, y, C_HEAD);
+            prevX = x; prevY = y;
+        }
+    }
+
+    // 5h current value, and 7d value with an ASCII trend arrow (default font is ASCII-only).
+    char buf[32];
+    int tr = historyTrend();
+    const char* arrow = (tr > 0) ? "^" : (tr < 0) ? "v" : "-";
+    g.setTextSize(1);
+    g.setTextColor(C_TEXT, C_BG);
+    g.setCursor(px, py + ph + 8);
+    snprintf(buf, sizeof(buf), "5H %.0f%%", data.h5);
+    g.print(buf);
+    g.setCursor(SCREEN_W / 2, py + ph + 8);
+    snprintf(buf, sizeof(buf), "7D %.0f%% %s", data.d7, arrow);
+    g.print(buf);
+
+    halFlush();
+}
+
 void uiRenderPage(uint8_t page, const UsageData& data, unsigned long lastFetchMs, int rssi, int batPct) {
     switch (page) {
-        case UI_PAGE_MODELS: uiPageModels(data, lastFetchMs, rssi, batPct); break;
+        case UI_PAGE_MODELS:  uiPageModels(data, lastFetchMs, rssi, batPct);  break;
+        case UI_PAGE_HISTORY: uiPageHistory(data, lastFetchMs, rssi, batPct); break;
         case UI_PAGE_USAGE:
-        default:             uiPageUsage(data, lastFetchMs, rssi, batPct);  break;
+        default:              uiPageUsage(data, lastFetchMs, rssi, batPct);   break;
     }
 }
 

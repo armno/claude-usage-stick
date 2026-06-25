@@ -20,6 +20,7 @@
 #include "crypto.h"
 #include "provision.h"
 #include "api.h"
+#include "history.h"
 #include "ui.h"
 #ifdef MANGO_UI
 #include "status.h"
@@ -93,6 +94,9 @@ static void refresh() {
         prefs.end();
     }
     fetchUsage(token, usage);
+#ifdef PAGED_UI
+    if (usage.ok) historyPush(usage.h5, usage.d7);
+#endif
 #ifdef MANGO_UI
     fetchModelStatus(modelStatus);   // failure keeps last-known state
     uiSetModelStatus(modelStatus);
