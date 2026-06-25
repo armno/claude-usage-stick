@@ -22,12 +22,12 @@ void uiSetModelStatus(const ModelStatus& s);
 // Flip the panel 180° (and clear it); caller redraws the current screen.
 void uiToggleRotation();
 // Close (true) or open (false) the healthy mascots' eyes on the dashboard.
-// On PAGED_UI boards, call only while UI_PAGE_MODELS is active (2x2-grid coords).
+// On PAGED_UI boards, call only while UI_PAGE_USAGE is active (the mascot row).
 void uiBlinkTick(bool closed);
 #ifdef PAGED_UI
 // Multi-page UI (T-Display S3). Pages are dispatched internally by uiRenderPage;
 // main.cpp drives navigation via currentPage and uiPageCount().
-enum UiPage { UI_PAGE_USAGE, UI_PAGE_MODELS, UI_PAGE_HISTORY, UI_PAGE_DEVICE, UI_PAGE_CLOCK, UI_PAGE_COUNT };
+enum UiPage { UI_PAGE_USAGE, UI_PAGE_HISTORY, UI_PAGE_DEVICE, UI_PAGE_CLOCK, UI_PAGE_COUNT };
 uint8_t uiPageCount();
 // 5h alert level for the header dot + flash: 0 ok, 1 warn, 2 critical.
 void uiSetAlertLevel(int level);

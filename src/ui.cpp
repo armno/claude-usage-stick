@@ -332,15 +332,8 @@ static TFT_eSprite& dashTarget() {
   #define UI_PUSH_DASH() halFlush()
 #endif
 
-static uint16_t barColor(float pct) {
-#ifdef PAGED_UI
-    if (pct >= ALERT_CRIT_PCT) return C_CRIT;
-    if (pct >= ALERT_WARN_PCT) return C_WARN;
-    return C_OK;
-#else
-    (void)pct;
+static uint16_t barColor(float) {
     return C_TEXT;
-#endif
 }
 
 // Right-aligned reset countdown that rides on a usage bar's label row (the
@@ -475,19 +468,14 @@ static void drawMascot(TFT_eSPI& g, int x, int y, int W, int rh, uint16_t color,
 // the four mascots — each named, each blinking when healthy — fill what's left.
 #define RESET_CAP_Y     80
 #define RESET_VAL_Y     92
-// Page 1 (Model health): the four Clawds own the whole screen as a 2x2 grid,
-// each larger than the old dashboard row. drawStatusPanel + uiBlinkTick share
-// these so their coordinates never drift apart.
-#define MASCOT_W        70                // fractional ~3.9px cells via mascotEdge
-#define MASCOT_RH       8                 // row height -> 40px tall
-#define MASCOT_COL0_CX  80                // left-column centre
-#define MASCOT_COL1_CX  240               // right-column centre
-#define MASCOT_ROW0_Y   34                // top-row mascot top
-#define MASCOT_ROW1_Y   104               // bottom-row mascot top
-#define MASCOT_NAME_DY  46                // name baseline, below the mascot top
-static inline int mascotCol(int i) { return (i % 2 == 0) ? MASCOT_COL0_CX : MASCOT_COL1_CX; }
-static inline int mascotRow(int i) { return (i < 2)      ? MASCOT_ROW0_Y  : MASCOT_ROW1_Y;  }
-#define MASCOT_X(i) (mascotCol(i) - MASCOT_W / 2)
+#define MASCOT_W        44                // fractional ~2.4px cells via mascotEdge
+#define MASCOT_RH       5                 // row height -> 25px tall
+#define MASCOT_Y        122
+#define MASCOT_SPACING  80
+#define MASCOT_CX0      40
+#define MASCOT_NAME_Y   156
+#define MASCOT_CX(i) (MASCOT_CX0 + (i) * MASCOT_SPACING)
+#define MASCOT_X(i)  (MASCOT_CX(i) - MASCOT_W / 2)
 
 // Per-model mascot colour when healthy (HAIKU, SONNET, OPUS, FABLE).
 // Opus + Fable keep Claude orange; a dead/unknown model overrides this with C_DIM.
@@ -518,47 +506,37 @@ static void drawStatusPanel(TFT_eSPI& g) {
     static const char* names[4] = {"HAIKU", "SONNET", "OPUS", "FABLE"};
     bool up[4] = {s_modelStatus.haikuUp, s_modelStatus.sonnetUp,
                   s_modelStatus.opusUp,  s_modelStatus.fableUp};
-    bool anyDown = false;
     for (int i = 0; i < 4; i++) {
-        int cx = mascotCol(i), my = mascotRow(i);
-        // Unknown (never fetched) renders gray without X eyes, so a status-page
-        // outage is never mistaken for a model outage.
+        int cx = MASCOT_CX(i);
+        // Unknown (status never fetched) renders gray without X eyes, so a
+        // status-page outage is never mistaken for a model outage.
         bool dead = s_modelStatus.ok && !up[i];
-        anyDown = anyDown || dead;
         uint16_t col = (!s_modelStatus.ok || dead) ? C_DIM : MASCOT_COLORS[i];
-        drawMascot(g, cx - MASCOT_W / 2, my, MASCOT_W, MASCOT_RH, col, dead);
+        drawMascot(g, MASCOT_X(i), MASCOT_Y, MASCOT_W, MASCOT_RH, col, dead);
         g.setTextColor(C_DIM, C_BG);
         g.setTextSize(1);
-        g.setCursor(cx - (int)strlen(names[i]) * 3, my + MASCOT_NAME_DY);
+        g.setCursor(cx - (int)strlen(names[i]) * 3, MASCOT_NAME_Y);
         g.print(names[i]);
     }
-    const char* summary = !s_modelStatus.ok ? "status unknown"
-                        : anyDown            ? "incident: model affected"
-                                             : "all models operational";
-    g.setTextColor(C_DIM, C_BG);
-    g.setTextSize(1);
-    g.setCursor((SCREEN_W - (int)strlen(summary) * 6) / 2, 160);
-    g.print(summary);
 }
 
-// Valid only on the Model page (2x2 grid). main.cpp gates this behind
-// currentPage == UI_PAGE_MODELS under PAGED_UI.
+// Repaint only the eye cells of the healthy mascots — drawn straight to the panel,
+// so the 2s "I'm alive" blink costs no full redraw.
 void uiBlinkTick(bool closed) {
     bool up[4] = {s_modelStatus.haikuUp, s_modelStatus.sonnetUp,
                   s_modelStatus.opusUp,  s_modelStatus.fableUp};
+    int ey = MASCOT_Y + MASCOT_RH;   // eye row 1
     for (int i = 0; i < 4; i++) {
         if (!s_modelStatus.ok || !up[i]) continue;   // dead/unknown don't blink
-        int mx = mascotCol(i) - MASCOT_W / 2;
-        int ey = mascotRow(i) + MASCOT_RH;            // eye row 1
         for (int e = 0; e < 2; e++) {
-            int ex = mx + mascotEdge(CLAWD_EYE_COLS[e], MASCOT_W);
+            int ex = MASCOT_X(i) + mascotEdge(CLAWD_EYE_COLS[e], MASCOT_W);
             int ew = mascotEdge(CLAWD_EYE_COLS[e] + 1, MASCOT_W) -
                      mascotEdge(CLAWD_EYE_COLS[e], MASCOT_W);
             if (closed) {
-                lcd.fillRect(ex, ey, ew, MASCOT_RH, MASCOT_COLORS[i]);     // lid down
-                lcd.fillRect(ex, ey + MASCOT_RH / 2 - 1, ew, 2, C_BG);     // shut line
+                lcd.fillRect(ex, ey, ew, MASCOT_RH, MASCOT_COLORS[i]);        // lid down
+                lcd.fillRect(ex, ey + MASCOT_RH / 2 - 1, ew, 2, C_BG);        // shut line
             } else {
-                lcd.fillRect(ex, ey, ew, MASCOT_RH, C_BG);                 // eye open
+                lcd.fillRect(ex, ey, ew, MASCOT_RH, C_BG);                    // eye open
             }
         }
     }
@@ -742,15 +720,7 @@ static void uiPageUsage(const UsageData& data, unsigned long lastFetchMs, int rs
     drawBar(g, SX(10), SY(24), barW, SY(10), data.h5, "5-HOUR");
     drawBar(g, SX(10), SY(52), barW, SY(10), data.d7, "7-DAY");
     drawResetRow(g, h5rst, d7rst);
-    halFlush();
-}
-
-static void uiPageModels(const UsageData& data, unsigned long lastFetchMs, int rssi, int batPct) {
-    auto& g = lcd;
-    halClear(C_BG);
-    unsigned long ago = (millis() - lastFetchMs) / 1000;
-    drawTopBar(g, rssi, ago, batPct);
-    drawStatusPanel(g);   // 2x2 grid + summary line
+    drawStatusPanel(g);   // four labelled, blinking mascots under the reset row
     halFlush();
 }
 
@@ -827,23 +797,23 @@ static void uiPageDevice(const UsageData& data, unsigned long lastFetchMs, int r
 }
 
 // Big bold local time + the next 5h reset (no 7d here). Shared by the full page
-// draw and the 10s tick; it wipes its own regions so the tick doesn't flicker.
+// draw and the 10s tick. The time uses Font 8 (75px); its digits are fixed-width,
+// so the opaque redraw overwrites the previous value in place without flicker.
 static void drawClockBody(TFT_eSPI& g, const UsageData& data) {
     struct tm tm;
     char tbuf[8] = "--:--";
     if (getLocalTime(&tm, 50)) snprintf(tbuf, sizeof(tbuf), "%02d:%02d", tm.tm_hour, tm.tm_min);
 
-    g.setTextSize(TS(6));
-    g.setTextColor(C_TEXT, C_BG);
-    int tw = (int)strlen(tbuf) * 6 * TS(6);
-    g.fillRect(0, SY(40), SCREEN_W, SY(60), C_BG);            // wipe prior time
-    g.setCursor((SCREEN_W - tw) / 2, SY(48));
-    g.print(tbuf);
-
     g.setTextSize(1);
+    g.setTextColor(C_TEXT, C_BG);
+    g.setTextDatum(MC_DATUM);
+    g.drawString(tbuf, SCREEN_W / 2, SY(64), 8);   // Font 8 = 75px tall, centred
+    g.setTextDatum(TL_DATUM);
+    g.setTextFont(1);
+
     g.setTextColor(C_DIM, C_BG);
     const char* loc = "Bangkok  UTC+7";
-    g.setCursor((SCREEN_W - (int)strlen(loc) * 6) / 2, SY(110));
+    g.setCursor((SCREEN_W - (int)strlen(loc) * 6) / 2, SY(120));
     g.print(loc);
 
     char rbuf[24] = "5h reset --:--";
@@ -854,8 +824,8 @@ static void drawClockBody(TFT_eSPI& g, const UsageData& data) {
         snprintf(rbuf, sizeof(rbuf), "5h reset %02d:%02d", rt.tm_hour, rt.tm_min);
     }
     g.setTextColor(C_TEXT, C_BG);
-    g.fillRect(0, SY(126), SCREEN_W, SY(16), C_BG);
-    g.setCursor((SCREEN_W - (int)strlen(rbuf) * 6) / 2, SY(128));
+    g.fillRect(0, SY(140), SCREEN_W, SY(16), C_BG);
+    g.setCursor((SCREEN_W - (int)strlen(rbuf) * 6) / 2, SY(142));
     g.print(rbuf);
 }
 
@@ -870,7 +840,6 @@ static void uiPageClock(const UsageData& data, unsigned long lastFetchMs, int rs
 
 void uiRenderPage(uint8_t page, const UsageData& data, unsigned long lastFetchMs, int rssi, int batPct) {
     switch (page) {
-        case UI_PAGE_MODELS:  uiPageModels(data, lastFetchMs, rssi, batPct);  break;
         case UI_PAGE_HISTORY: uiPageHistory(data, lastFetchMs, rssi, batPct); break;
         case UI_PAGE_DEVICE:  uiPageDevice(data, lastFetchMs, rssi, batPct);  break;
         case UI_PAGE_CLOCK:   uiPageClock(data, lastFetchMs, rssi, batPct);   break;

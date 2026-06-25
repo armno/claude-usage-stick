@@ -357,7 +357,7 @@ void loop() {
     static unsigned long lastBlink = 0;
     static bool eyesClosed = false;
 #ifdef PAGED_UI
-    bool blinkActive = (currentPage == UI_PAGE_MODELS);
+    bool blinkActive = (currentPage == UI_PAGE_USAGE);
 #else
     bool blinkActive = true;
 #endif
