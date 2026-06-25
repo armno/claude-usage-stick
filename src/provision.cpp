@@ -137,6 +137,74 @@ document.getElementById('f').addEventListener('submit',async(e)=>{
 </body>
 </html>)rawhtml";
 
+static const char WIFI_HTML[] PROGMEM = R"rawhtml(<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Change WiFi</title>
+<style>
+  :root{--bg:#191919;--card:#252525;--border:#3a3a3a;--text:#e0e0e0;
+        --dim:#888;--accent:#e8733a;--cyan:#f0a050;--red:#f66}
+  *{box-sizing:border-box;margin:0;font-family:system-ui,-apple-system,sans-serif}
+  body{background:var(--bg);color:var(--text);padding:8px;min-height:100vh}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;
+        padding:14px 18px;max-width:420px;margin:0 auto}
+  h1{color:var(--accent);font-size:1.4em;margin-bottom:2px}
+  .sub{color:var(--dim);font-size:.85em;margin-bottom:12px}
+  .field{margin-bottom:10px}
+  label{display:block;font-size:.85em;color:var(--dim);margin-bottom:4px}
+  input{width:100%;padding:8px 10px;border:1px solid var(--border);
+        border-radius:8px;background:var(--bg);color:var(--text);font-size:1em;outline:0}
+  input:focus{border-color:var(--cyan)}
+  input[type=password]{font-family:monospace;letter-spacing:1px}
+  button{margin-top:12px;width:100%;padding:10px;border:none;border-radius:8px;
+         background:var(--accent);color:var(--bg);font-weight:700;font-size:1em;cursor:pointer}
+  button:active{opacity:.8}
+  button:disabled{opacity:.5;cursor:wait}
+  #status{margin-top:8px;font-size:.9em;text-align:center;min-height:1.2em}
+  .ok{color:#4f4} .err{color:var(--red)}
+  .section-label{font-size:.75em;color:var(--dim);text-transform:uppercase;
+                 letter-spacing:1px;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Change WiFi</h1>
+  <p class="sub">Updates the WiFi network only. Your saved token and PIN are kept.</p>
+  <form id="f">
+    <div class="section-label">WiFi Network (2.4 GHz only)</div>
+    <div class="field">
+      <label for="ssid">SSID</label>
+      <input id="ssid" name="ssid" required maxlength="32" autocomplete="off"
+             placeholder="Your WiFi network name">
+    </div>
+    <div class="field">
+      <label for="wifipass">Password</label>
+      <input id="wifipass" name="wifipass" type="password" maxlength="64"
+             autocomplete="off" placeholder="Leave empty for open network">
+    </div>
+    <button type="submit" id="btn">Save & Reboot</button>
+    <div id="status"></div>
+  </form>
+</div>
+<script>
+document.getElementById('f').addEventListener('submit',async(e)=>{
+  e.preventDefault();
+  const btn=document.getElementById('btn'),st=document.getElementById('status');
+  btn.disabled=true;st.className='';st.textContent='Saving...';
+  try{
+    const r=await fetch('/wifiupdate',{method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:new URLSearchParams(new FormData(e.target))});
+    if(r.ok){st.className='ok';st.textContent='Saved! Device rebooting now...';}
+    else{st.className='err';st.textContent='Error: '+await r.text();btn.disabled=false;}
+  }catch(x){st.className='ok';st.textContent='Device rebooting (connection closed).';}
+});
+</script>
+</body>
+</html>)rawhtml";
+
 static void handleRoot() {
     webServer.send(200, "text/html", FPSTR(SETUP_HTML));
 }
@@ -189,15 +257,45 @@ static void handleNotFound() {
     webServer.send(302, "text/plain", "");
 }
 
-void runProvisioningPortal(const char* apName, const char* apPass) {
+static void handleWiFiRoot() {
+    webServer.send(200, "text/html", FPSTR(WIFI_HTML));
+}
+
+static void handleWiFiUpdate() {
+    String ssid     = webServer.arg("ssid");
+    String wifipass = webServer.arg("wifipass");
+
+    if (ssid.isEmpty()) {
+        webServer.send(400, "text/plain", "SSID is required.");
+        return;
+    }
+
+    // Write ONLY the WiFi keys. The encrypted token blob and every other setting
+    // are deliberately left untouched so the device unlocks with the same PIN.
+    prefs.begin(NVS_NAMESPACE, false);
+    prefs.putString("ssid", ssid);
+    prefs.putString("wifipass", wifipass);
+    prefs.end();
+
+    webServer.send(200, "text/plain", "OK");
+    delay(1500);
+    ESP.restart();
+}
+
+static void servePortal(const char* apName, const char* apPass, bool wifiOnly) {
     WiFi.mode(WIFI_AP);
     WiFi.softAP(apName, apPass);
     delay(100);
 
     dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
 
-    webServer.on("/", HTTP_GET, handleRoot);
-    webServer.on("/provision", HTTP_POST, handleProvision);
+    if (wifiOnly) {
+        webServer.on("/", HTTP_GET, handleWiFiRoot);
+        webServer.on("/wifiupdate", HTTP_POST, handleWiFiUpdate);
+    } else {
+        webServer.on("/", HTTP_GET, handleRoot);
+        webServer.on("/provision", HTTP_POST, handleProvision);
+    }
     webServer.onNotFound(handleNotFound);
     webServer.begin();
 
@@ -208,4 +306,12 @@ void runProvisioningPortal(const char* apName, const char* apPass) {
         webServer.handleClient();
         delay(2);
     }
+}
+
+void runProvisioningPortal(const char* apName, const char* apPass) {
+    servePortal(apName, apPass, false);
+}
+
+void runWiFiPortal(const char* apName, const char* apPass) {
+    servePortal(apName, apPass, true);
 }

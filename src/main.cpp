@@ -90,6 +90,25 @@ static void refresh() {
     uiDashboard(usage, lastFetch, WiFi.RSSI(), halBatPercent());
 }
 
+// ── AP Credentials ─────────────────────────────────────
+// Builds the captive-portal AP name (ClaudeMonitor-XXXX, from the last 2 MAC bytes)
+// and a random 8-char password into caller buffers. apPass must be at least 9 bytes.
+// The C3-OLED has no readable display during setup, so it uses an open AP (empty pass).
+static void makeApCredentials(char* apName, size_t nameLen, char* apPass) {
+    uint8_t mac[6];
+    esp_efuse_mac_get_default(mac);
+    snprintf(apName, nameLen, "ClaudeMonitor-%02X%02X", mac[4], mac[5]);
+#ifdef BOARD_ESP32C3_OLED
+    apPass[0] = '\0';
+#else
+    static const char alphabet[] = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    uint8_t rnd[8];
+    esp_fill_random(rnd, sizeof(rnd));
+    for (int i = 0; i < 8; i++) apPass[i] = alphabet[rnd[i] % (sizeof(alphabet) - 1)];
+    apPass[8] = '\0';
+#endif
+}
+
 // ── Setup ──────────────────────────────────────────────
 void setup() {
     halInit();
@@ -124,6 +143,28 @@ void setup() {
         }
     }
 
+#ifdef BOARD_TDISPLAY_S3
+    // Hold Button B alone for 2s at boot → WiFi-only re-provisioning portal.
+    // Changes the WiFi network without touching the encrypted token or PIN.
+    // Checked AFTER the A+B factory-reset block, so B-alone never wipes NVS.
+    halUpdate();
+    if (halBtnBIsPressed() && !halBtnAIsPressed()) {
+        uiBootProgress(40, "Hold B 2s: WiFi");
+        bool held = true;
+        for (int i = 0; i < 20 && held; i++) {
+            delay(100);
+            halUpdate();
+            if (!halBtnBIsPressed() || halBtnAIsPressed()) held = false;
+        }
+        if (held) {
+            char apName[24], apPass[9];
+            makeApCredentials(apName, sizeof(apName), apPass);
+            runWiFiPortal(apName, apPass);   // blocking; reboots on save
+            return;
+        }
+    }
+#endif
+
     // Check provisioned
     prefs.begin(NVS_NAMESPACE, true);
     bool provisioned = prefs.getBool("provisioned", false);
@@ -133,23 +174,8 @@ void setup() {
         uiBootProgress(50, "No config found");
         delay(400);
 
-        uint8_t mac[6];
-        esp_efuse_mac_get_default(mac);
-        char apName[24];
-        snprintf(apName, sizeof(apName), "ClaudeMonitor-%02X%02X", mac[4], mac[5]);
-
-#ifdef BOARD_ESP32C3_OLED
-        // No readable display during setup — use open AP so password isn't needed
-        const char* apPass = "";
-        Serial.printf("[SETUP] AP: %s (open)\n", apName);
-#else
-        static const char alphabet[] = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-        uint8_t rnd[8];
-        esp_fill_random(rnd, sizeof(rnd));
-        char apPass[9];
-        for (int i = 0; i < 8; i++) apPass[i] = alphabet[rnd[i] % (sizeof(alphabet) - 1)];
-        apPass[8] = '\0';
-#endif
+        char apName[24], apPass[9];
+        makeApCredentials(apName, sizeof(apName), apPass);
         runProvisioningPortal(apName, apPass);
         return;
     }
@@ -198,9 +224,18 @@ void setup() {
     uiBootProgress(80, "Connecting WiFi...");
 
     if (!connectWiFi(ssid.c_str(), pass.c_str())) {
+#ifdef BOARD_TDISPLAY_S3
+        uiError("WIFI FAILED", "Starting WiFi setup");
+        delay(2500);
+        char apName[24], apPass[9];
+        makeApCredentials(apName, sizeof(apName), apPass);
+        runWiFiPortal(apName, apPass);   // blocking; reboots on save
+        return;
+#else
         uiError("WIFI FAILED", ssid.c_str());
         delay(5000);
         ESP.restart();
+#endif
     }
 
     uiBootProgress(90, "Syncing time...");
