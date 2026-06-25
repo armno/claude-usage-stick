@@ -34,6 +34,9 @@ static ModelStatus modelStatus = {true, true, true, true, false};
 static unsigned long lastFetch = 0;
 static int         pollMs     = DEFAULT_POLL_SEC * 1000;
 static uint8_t     brightness = DEFAULT_BRIGHTNESS;
+#ifdef PAGED_UI
+static uint8_t currentPage = 0;   // UI_PAGE_* — Button A cycles, refresh() redraws
+#endif
 
 // ── PIN Entry (blocks until 4 digits confirmed) ────────
 static void enterPin(char* pinOut, int maxLen) {
@@ -87,7 +90,11 @@ static void refresh() {
     uiSetModelStatus(modelStatus);
 #endif
     lastFetch = millis();
+#ifdef PAGED_UI
+    uiRenderPage(currentPage, usage, lastFetch, WiFi.RSSI(), halBatPercent());
+#else
     uiDashboard(usage, lastFetch, WiFi.RSSI(), halBatPercent());
+#endif
 }
 
 // ── AP Credentials ─────────────────────────────────────
@@ -249,7 +256,38 @@ void setup() {
 void loop() {
     halUpdate();
 
-#ifdef MANGO_UI
+#ifdef PAGED_UI
+    // Tap A = next page; hold A (~600ms) = flip; B = brightness; A+B = refresh.
+    // A solo action commits only after the combo window so B can still join; A is
+    // then resolved on release (tap -> next) or at the hold threshold (flip).
+    static unsigned long aPressAt = 0, bPressAt = 0;
+    static bool aHandled = false;
+    const unsigned long comboWindowMs = 350;
+    const unsigned long holdMs = 600;
+    if (halBtnAWasPressed()) { aPressAt = millis(); aHandled = false; }
+    if (halBtnBWasPressed()) bPressAt = millis();
+
+    if ((aPressAt && (bPressAt || halBtnBIsPressed())) ||
+        (bPressAt && halBtnAIsPressed())) {
+        aPressAt = bPressAt = 0;
+        aHandled = true;
+        refresh();
+    } else if (aPressAt && !aHandled && millis() - aPressAt > holdMs) {
+        aHandled = true;
+        aPressAt = 0;
+        uiToggleRotation();
+        uiRenderPage(currentPage, usage, lastFetch, WiFi.RSSI(), halBatPercent());
+    } else if (aPressAt && !aHandled && !halBtnAIsPressed() &&
+               millis() - aPressAt > comboWindowMs) {
+        aPressAt = 0;
+        currentPage = (currentPage + 1) % uiPageCount();
+        uiRenderPage(currentPage, usage, lastFetch, WiFi.RSSI(), halBatPercent());
+    } else if (bPressAt && millis() - bPressAt > comboWindowMs) {
+        bPressAt = 0;
+        brightness = (brightness + 1) % 4;
+        halSetBrightness(brightness);
+    }
+#elif defined(MANGO_UI)
     // A flips the screen 180°, B cycles brightness, A+B together = force refresh
     // (the Clarity Button-B action). A single press only commits after a short
     // window so the other button can still join to form the combo.
@@ -294,10 +332,17 @@ void loop() {
     // Healthy mascots blink every 2s (eyes shut for 150ms) to show liveness.
     static unsigned long lastBlink = 0;
     static bool eyesClosed = false;
-    if (eyesClosed && millis() - lastBlink > 150) {
+#ifdef PAGED_UI
+    bool blinkActive = (currentPage == UI_PAGE_MODELS);
+#else
+    bool blinkActive = true;
+#endif
+    if (eyesClosed && blinkActive && millis() - lastBlink > 150) {
         uiBlinkTick(false);
         eyesClosed = false;
-    } else if (!eyesClosed && usage.ok && millis() - lastBlink > 2000) {
+    } else if (eyesClosed && !blinkActive) {
+        eyesClosed = false;   // navigated away mid-blink: reset without drawing
+    } else if (!eyesClosed && blinkActive && usage.ok && millis() - lastBlink > 2000) {
         uiBlinkTick(true);
         eyesClosed = true;
         lastBlink = millis();
@@ -306,9 +351,12 @@ void loop() {
 
     static unsigned long lastRedraw = 0;
     if (millis() - lastRedraw > 10000) {
-        // Only time passed (not data) — update the clock/countdowns in place; redrawing
-        // the whole dashboard here is what made the slow CrowPanel panel flicker.
+        // Only time passed (not data) — update the clock/countdowns in place.
+#ifdef PAGED_UI
+        uiRenderPageClock(currentPage, usage, lastFetch, WiFi.RSSI());
+#else
         uiDashboardClock(usage, lastFetch, WiFi.RSSI());
+#endif
         lastRedraw = millis();
     }
 

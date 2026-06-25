@@ -1,4 +1,5 @@
 #pragma once
+#include "config.h"
 #include "api.h"
 #ifdef MANGO_UI
 #include "status.h"
@@ -22,4 +23,14 @@ void uiSetModelStatus(const ModelStatus& s);
 void uiToggleRotation();
 // Close (true) or open (false) the healthy mascots' eyes on the dashboard.
 void uiBlinkTick(bool closed);
+#ifdef PAGED_UI
+// Multi-page UI (T-Display S3). Pages are dispatched internally by uiRenderPage;
+// main.cpp drives navigation via currentPage and uiPageCount().
+enum UiPage { UI_PAGE_USAGE, UI_PAGE_MODELS, UI_PAGE_COUNT };
+uint8_t uiPageCount();
+// Full draw of one page (clears + header + body). Replaces uiDashboard on the S3.
+void uiRenderPage(uint8_t page, const UsageData& data, unsigned long lastFetchMs, int rssi, int batPct);
+// In-place time tick for the current page (no full clear) — replaces uiDashboardClock.
+void uiRenderPageClock(uint8_t page, const UsageData& data, unsigned long lastFetchMs, int rssi);
+#endif // PAGED_UI
 #endif // MANGO_UI

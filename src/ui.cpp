@@ -455,14 +455,19 @@ static void drawMascot(TFT_eSPI& g, int x, int y, int W, int rh, uint16_t color,
 // the four mascots — each named, each blinking when healthy — fill what's left.
 #define RESET_CAP_Y     80
 #define RESET_VAL_Y     92
-#define MASCOT_W        44                // fractional ~2.4px cells via mascotEdge
-#define MASCOT_RH       5                 // row height → 25px tall
-#define MASCOT_Y        122
-#define MASCOT_SPACING  80
-#define MASCOT_CX0      40
-#define MASCOT_NAME_Y   156
-#define MASCOT_CX(i) (MASCOT_CX0 + (i) * MASCOT_SPACING)
-#define MASCOT_X(i)  (MASCOT_CX(i) - MASCOT_W / 2)
+// Page 1 (Model health): the four Clawds own the whole screen as a 2x2 grid,
+// each larger than the old dashboard row. drawStatusPanel + uiBlinkTick share
+// these so their coordinates never drift apart.
+#define MASCOT_W        70                // fractional ~3.9px cells via mascotEdge
+#define MASCOT_RH       8                 // row height -> 40px tall
+#define MASCOT_COL0_CX  80                // left-column centre
+#define MASCOT_COL1_CX  240               // right-column centre
+#define MASCOT_ROW0_Y   34                // top-row mascot top
+#define MASCOT_ROW1_Y   104               // bottom-row mascot top
+#define MASCOT_NAME_DY  46                // name baseline, below the mascot top
+static inline int mascotCol(int i) { return (i % 2 == 0) ? MASCOT_COL0_CX : MASCOT_COL1_CX; }
+static inline int mascotRow(int i) { return (i < 2)      ? MASCOT_ROW0_Y  : MASCOT_ROW1_Y;  }
+#define MASCOT_X(i) (mascotCol(i) - MASCOT_W / 2)
 
 // Per-model mascot colour when healthy (HAIKU, SONNET, OPUS, FABLE).
 // Opus + Fable keep Claude orange; a dead/unknown model overrides this with C_DIM.
@@ -493,37 +498,45 @@ static void drawStatusPanel(TFT_eSPI& g) {
     static const char* names[4] = {"HAIKU", "SONNET", "OPUS", "FABLE"};
     bool up[4] = {s_modelStatus.haikuUp, s_modelStatus.sonnetUp,
                   s_modelStatus.opusUp,  s_modelStatus.fableUp};
+    bool anyDown = false;
     for (int i = 0; i < 4; i++) {
-        int cx = MASCOT_CX(i);
-        // Unknown (status never fetched) renders gray without X eyes, so a
-        // status-page outage is never mistaken for a model outage.
+        int cx = mascotCol(i), my = mascotRow(i);
+        // Unknown (never fetched) renders gray without X eyes, so a status-page
+        // outage is never mistaken for a model outage.
         bool dead = s_modelStatus.ok && !up[i];
+        anyDown = anyDown || dead;
         uint16_t col = (!s_modelStatus.ok || dead) ? C_DIM : MASCOT_COLORS[i];
-        drawMascot(g, MASCOT_X(i), MASCOT_Y, MASCOT_W, MASCOT_RH, col, dead);
+        drawMascot(g, cx - MASCOT_W / 2, my, MASCOT_W, MASCOT_RH, col, dead);
         g.setTextColor(C_DIM, C_BG);
         g.setTextSize(1);
-        g.setCursor(cx - (int)strlen(names[i]) * 3, MASCOT_NAME_Y);
+        g.setCursor(cx - (int)strlen(names[i]) * 3, my + MASCOT_NAME_DY);
         g.print(names[i]);
     }
+    const char* summary = !s_modelStatus.ok ? "status unknown"
+                        : anyDown            ? "incident: model affected"
+                                             : "all models operational";
+    g.setTextColor(C_DIM, C_BG);
+    g.setTextSize(1);
+    g.setCursor((SCREEN_W - (int)strlen(summary) * 6) / 2, 160);
+    g.print(summary);
 }
 
-// Repaint only the eye cells of the healthy mascots — drawn straight to the panel,
-// so the 2s "I'm alive" blink costs no full redraw.
 void uiBlinkTick(bool closed) {
     bool up[4] = {s_modelStatus.haikuUp, s_modelStatus.sonnetUp,
                   s_modelStatus.opusUp,  s_modelStatus.fableUp};
-    int ey = MASCOT_Y + MASCOT_RH;   // eye row 1
     for (int i = 0; i < 4; i++) {
         if (!s_modelStatus.ok || !up[i]) continue;   // dead/unknown don't blink
+        int mx = mascotCol(i) - MASCOT_W / 2;
+        int ey = mascotRow(i) + MASCOT_RH;            // eye row 1
         for (int e = 0; e < 2; e++) {
-            int ex = MASCOT_X(i) + mascotEdge(CLAWD_EYE_COLS[e], MASCOT_W);
+            int ex = mx + mascotEdge(CLAWD_EYE_COLS[e], MASCOT_W);
             int ew = mascotEdge(CLAWD_EYE_COLS[e] + 1, MASCOT_W) -
                      mascotEdge(CLAWD_EYE_COLS[e], MASCOT_W);
             if (closed) {
-                lcd.fillRect(ex, ey, ew, MASCOT_RH, MASCOT_COLORS[i]);        // lid down
-                lcd.fillRect(ex, ey + MASCOT_RH / 2 - 1, ew, 2, C_BG);        // shut line
+                lcd.fillRect(ex, ey, ew, MASCOT_RH, MASCOT_COLORS[i]);     // lid down
+                lcd.fillRect(ex, ey + MASCOT_RH / 2 - 1, ew, 2, C_BG);     // shut line
             } else {
-                lcd.fillRect(ex, ey, ew, MASCOT_RH, C_BG);                    // eye open
+                lcd.fillRect(ex, ey, ew, MASCOT_RH, C_BG);                 // eye open
             }
         }
     }
@@ -643,6 +656,88 @@ static void drawHeaderRight(TFT_eSPI& g, int rssi, unsigned long ago, int batPct
     g.setCursor(x - 6 - (int)strlen(as) * 6, 5);
     g.print(as);
 }
+
+#ifdef PAGED_UI
+// ── Paged UI (T-Display S3) ─────────────────────────────────────────────────
+// Each page clears, draws the shared top bar, draws its body, and flushes. The S3
+// draws straight to the panel (no off-screen sprite — that path is CrowPanel only).
+
+uint8_t uiPageCount() { return UI_PAGE_COUNT; }
+
+// Orange header band: title on the left, status cluster (wifi/batt/ago) on the right.
+static void drawTopBar(TFT_eSPI& g, int rssi, unsigned long ago, int batPct) {
+    g.fillRect(0, 0, SCREEN_W, SY(18), C_HEAD);
+    g.setTextColor(C_TEXT, C_HEAD);
+    g.setTextSize(TS(1));
+    g.setCursor(SX(4), SY(5));
+    g.print("ARMNO'S CLAUDEOMETER");
+    drawHeaderRight(g, rssi, ago, batPct);
+}
+
+static void uiPageUsage(const UsageData& data, unsigned long lastFetchMs, int rssi, int batPct) {
+    auto& g = lcd;
+    halClear(C_BG);
+    unsigned long ago = (millis() - lastFetchMs) / 1000;
+    drawTopBar(g, rssi, ago, batPct);
+
+    if (!data.ok) {
+        g.setTextColor(C_CRIT, C_BG);
+        g.setTextSize(TS(2));
+        g.setCursor(SX(10), SY(35));
+        g.print("ERROR");
+        g.setTextSize(TS(1));
+        g.setTextColor(C_DIM, C_BG);
+        g.setCursor(SX(10), SY(60));
+        g.print(data.error);
+        g.setCursor(SX(10), SY(80));
+        g.print("retrying automatically...");
+        halFlush();
+        return;
+    }
+
+    int barW = SCREEN_W - SX(20);
+    char h5rst[16], d7rst[16];
+    fmtCountdown(data.h5ResetEpoch, h5rst, sizeof(h5rst));
+    fmtCountdown(data.d7ResetEpoch, d7rst, sizeof(d7rst));
+    drawBar(g, SX(10), SY(24), barW, SY(10), data.h5, "5-HOUR");
+    drawBar(g, SX(10), SY(52), barW, SY(10), data.d7, "7-DAY");
+    drawResetRow(g, h5rst, d7rst);
+    halFlush();
+}
+
+static void uiPageModels(const UsageData& data, unsigned long lastFetchMs, int rssi, int batPct) {
+    auto& g = lcd;
+    halClear(C_BG);
+    unsigned long ago = (millis() - lastFetchMs) / 1000;
+    drawTopBar(g, rssi, ago, batPct);
+    drawStatusPanel(g);   // 2x2 grid + summary line
+    halFlush();
+}
+
+void uiRenderPage(uint8_t page, const UsageData& data, unsigned long lastFetchMs, int rssi, int batPct) {
+    switch (page) {
+        case UI_PAGE_MODELS: uiPageModels(data, lastFetchMs, rssi, batPct); break;
+        case UI_PAGE_USAGE:
+        default:             uiPageUsage(data, lastFetchMs, rssi, batPct);  break;
+    }
+}
+
+void uiRenderPageClock(uint8_t page, const UsageData& data, unsigned long lastFetchMs, int rssi) {
+    auto& g = lcd;
+    unsigned long ago = (millis() - lastFetchMs) / 1000;
+    // Repaint the right half of the header band in place (the ago counter ticks).
+    g.fillRect(SCREEN_W / 2, 0, SCREEN_W / 2, SY(18), C_HEAD);
+    drawHeaderRight(g, rssi, ago, halBatPercent());
+    if (page == UI_PAGE_USAGE && data.ok) {
+        char h5rst[16], d7rst[16];
+        fmtCountdown(data.h5ResetEpoch, h5rst, sizeof(h5rst));
+        fmtCountdown(data.d7ResetEpoch, d7rst, sizeof(d7rst));
+        drawResetValues(g, h5rst, d7rst);
+    }
+    halFlush();
+}
+#endif // PAGED_UI
+
 #endif // MANGO_UI
 
 void uiInit() {
@@ -911,17 +1006,9 @@ void uiDashboard(const UsageData& data, unsigned long lastFetchMs, int rssi, int
     fmtCountdown(data.d7ResetEpoch, d7rst, sizeof(d7rst));
 
 #ifdef MANGO_UI
-#ifdef BOARD_TDISPLAY_S3
-    // Tier L: % flush-right on the bar rows; the countdowns get their own
-    // size-2 row below the bars.
-    drawBar(g, SX(10), SY(24), barW, SY(10), data.h5, "5-HOUR");
-    drawBar(g, SX(10), SY(52), barW, SY(10), data.d7, "7-DAY");
-    drawResetRow(g, h5rst, d7rst);
-#else
-    // Tier S: each reset countdown rides on its bar's label row — no room below.
+    // Tier S (M5StickC Plus): each reset countdown rides on its bar's label row.
     drawBar(g, SX(10), SY(24), barW, SY(10), data.h5, "5-HOUR", h5rst);
     drawBar(g, SX(10), SY(52), barW, SY(10), data.d7, "7-DAY",  d7rst);
-#endif
     drawStatusPanel(g);
 #else
     drawBar(g, SX(10), SY(24), barW, SY(10), data.h5, "5-HOUR WINDOW");
@@ -980,15 +1067,10 @@ void uiDashboardClock(const UsageData& data, unsigned long lastFetchMs, int rssi
     fmtCountdown(data.h5ResetEpoch, h5rst, sizeof(h5rst));
     fmtCountdown(data.d7ResetEpoch, d7rst, sizeof(d7rst));
 #ifdef MANGO_UI
-#ifdef BOARD_TDISPLAY_S3
-    // Tier L: the countdowns live on their own row below the bars.
-    drawResetValues(g, h5rst, d7rst);
-#else
     // Tier S: the countdowns live on the bar rows; refresh just those slots.
     int barW = SCREEN_W - SX(20);
     drawResetSlot(g, SX(10), barW, SY(24), h5rst);
     drawResetSlot(g, SX(10), barW, SY(52), d7rst);
-#endif
 #else
     g.setTextColor(C_TEXT, C_BG);
     g.setTextSize(TS(2));

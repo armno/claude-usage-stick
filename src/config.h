@@ -1,7 +1,7 @@
 #pragma once
 
 // ── Firmware version ─────────────────────────────────────
-#define FW_VERSION              "2.1.1"  // Mango — shown on the Mango boot screen
+#define FW_VERSION              "2.2.0"  // Mango — shown on the Mango boot screen
 
 // ── Polling ──────────────────────────────────────────────
 #define DEFAULT_POLL_SEC        120
@@ -63,3 +63,18 @@
 //   Button A = flip screen / Button B = brightness. Enabled on the boards whose
 //   panels have the vertical room for it: BOARD_TDISPLAY_S3 (320x170) and
 //   BOARD_M5STICK_C_PLUS (240x135). Mango-specific geometry branches on the board.
+
+// PAGED_UI — multi-page navigation + escalating alerts, T-Display S3 only.
+// Implies MANGO_UI. Gates every paged-UI / alert change so M5StickC Plus and the
+// Clarity boards keep their single dashboard unchanged.
+// See docs/superpowers/specs/2026-06-25-paged-ui-alerts-design.md
+#if defined(MANGO_UI) && defined(BOARD_TDISPLAY_S3)
+  #define PAGED_UI
+#endif
+
+// ── Alerts (paged UI) ────────────────────────────────────
+// Utilization bands: green < WARN, amber WARN..CRIT-1, red >= CRIT. Defined in the
+// foundation because both the alert logic (Task 2) and the Device readout (Task 4) read
+// them. WARN=50 mirrors the compact-at-50% habit on a 1M-context session; CRIT=80 = act now.
+#define ALERT_WARN_PCT          50
+#define ALERT_CRIT_PCT          80
