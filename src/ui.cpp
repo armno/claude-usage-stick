@@ -521,6 +521,8 @@ static void drawStatusPanel(TFT_eSPI& g) {
     g.print(summary);
 }
 
+// Valid only on the Model page (2x2 grid). main.cpp gates this behind
+// currentPage == UI_PAGE_MODELS under PAGED_UI.
 void uiBlinkTick(bool closed) {
     bool up[4] = {s_modelStatus.haikuUp, s_modelStatus.sonnetUp,
                   s_modelStatus.opusUp,  s_modelStatus.fableUp};
