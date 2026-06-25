@@ -826,11 +826,54 @@ static void uiPageDevice(const UsageData& data, unsigned long lastFetchMs, int r
     halFlush();
 }
 
+// Big bold local time + the next 5h reset (no 7d here). Shared by the full page
+// draw and the 10s tick; it wipes its own regions so the tick doesn't flicker.
+static void drawClockBody(TFT_eSPI& g, const UsageData& data) {
+    struct tm tm;
+    char tbuf[8] = "--:--";
+    if (getLocalTime(&tm, 50)) snprintf(tbuf, sizeof(tbuf), "%02d:%02d", tm.tm_hour, tm.tm_min);
+
+    g.setTextSize(TS(6));
+    g.setTextColor(C_TEXT, C_BG);
+    int tw = (int)strlen(tbuf) * 6 * TS(6);
+    g.fillRect(0, SY(40), SCREEN_W, SY(60), C_BG);            // wipe prior time
+    g.setCursor((SCREEN_W - tw) / 2, SY(48));
+    g.print(tbuf);
+
+    g.setTextSize(1);
+    g.setTextColor(C_DIM, C_BG);
+    const char* loc = "Bangkok  UTC+7";
+    g.setCursor((SCREEN_W - (int)strlen(loc) * 6) / 2, SY(110));
+    g.print(loc);
+
+    char rbuf[24] = "5h reset --:--";
+    if (data.ok && data.h5ResetEpoch) {
+        time_t e = (time_t)data.h5ResetEpoch;
+        struct tm rt;
+        localtime_r(&e, &rt);
+        snprintf(rbuf, sizeof(rbuf), "5h reset %02d:%02d", rt.tm_hour, rt.tm_min);
+    }
+    g.setTextColor(C_TEXT, C_BG);
+    g.fillRect(0, SY(126), SCREEN_W, SY(16), C_BG);
+    g.setCursor((SCREEN_W - (int)strlen(rbuf) * 6) / 2, SY(128));
+    g.print(rbuf);
+}
+
+static void uiPageClock(const UsageData& data, unsigned long lastFetchMs, int rssi, int batPct) {
+    auto& g = lcd;
+    halClear(C_BG);
+    unsigned long ago = (millis() - lastFetchMs) / 1000;
+    drawTopBar(g, rssi, ago, batPct);
+    drawClockBody(g, data);
+    halFlush();
+}
+
 void uiRenderPage(uint8_t page, const UsageData& data, unsigned long lastFetchMs, int rssi, int batPct) {
     switch (page) {
         case UI_PAGE_MODELS:  uiPageModels(data, lastFetchMs, rssi, batPct);  break;
         case UI_PAGE_HISTORY: uiPageHistory(data, lastFetchMs, rssi, batPct); break;
         case UI_PAGE_DEVICE:  uiPageDevice(data, lastFetchMs, rssi, batPct);  break;
+        case UI_PAGE_CLOCK:   uiPageClock(data, lastFetchMs, rssi, batPct);   break;
         case UI_PAGE_USAGE:
         default:              uiPageUsage(data, lastFetchMs, rssi, batPct);   break;
     }
@@ -847,6 +890,8 @@ void uiRenderPageClock(uint8_t page, const UsageData& data, unsigned long lastFe
         fmtCountdown(data.h5ResetEpoch, h5rst, sizeof(h5rst));
         fmtCountdown(data.d7ResetEpoch, d7rst, sizeof(d7rst));
         drawResetValues(g, h5rst, d7rst);
+    } else if (page == UI_PAGE_CLOCK) {
+        drawClockBody(g, data);
     }
     halFlush();
 }

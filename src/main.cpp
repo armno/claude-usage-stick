@@ -72,7 +72,11 @@ static bool connectWiFi(const char* ssid, const char* pass) {
 
 // ── Sync NTP for reset countdown display ───────────────
 static void syncTime() {
+#ifdef PAGED_UI
+    configTime(7 * 3600, 0, "pool.ntp.org", "time.nist.gov");  // UTC+7 for the Clock page
+#else
     configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+#endif
     struct tm t;
     getLocalTime(&t, 5000);
 }
