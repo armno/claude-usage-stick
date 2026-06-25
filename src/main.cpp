@@ -76,6 +76,14 @@ static void syncTime() {
     getLocalTime(&t, 5000);
 }
 
+#ifdef PAGED_UI
+static int alertLevelFor(float pct) {
+    if (pct >= ALERT_CRIT_PCT) return 2;
+    if (pct >= ALERT_WARN_PCT) return 1;
+    return 0;
+}
+#endif
+
 // ── Fetch + draw ───────────────────────────────────────
 static void refresh() {
     if (WiFi.status() != WL_CONNECTED) {
@@ -91,6 +99,12 @@ static void refresh() {
 #endif
     lastFetch = millis();
 #ifdef PAGED_UI
+    // Dot + flash track the 5h window only; the 7d bar colors itself on the Usage page.
+    static int prevAlertLevel = 0;
+    int level = usage.ok ? alertLevelFor(usage.h5) : 0;
+    uiSetAlertLevel(level);
+    if (level >= 2 && prevAlertLevel < 2) uiAlertFlash();   // fires once on the crossing
+    prevAlertLevel = level;
     uiRenderPage(currentPage, usage, lastFetch, WiFi.RSSI(), halBatPercent());
 #else
     uiDashboard(usage, lastFetch, WiFi.RSSI(), halBatPercent());

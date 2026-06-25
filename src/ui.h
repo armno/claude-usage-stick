@@ -29,6 +29,10 @@ void uiBlinkTick(bool closed);
 // main.cpp drives navigation via currentPage and uiPageCount().
 enum UiPage { UI_PAGE_USAGE, UI_PAGE_MODELS, UI_PAGE_COUNT };
 uint8_t uiPageCount();
+// 5h alert level for the header dot + flash: 0 ok, 1 warn, 2 critical.
+void uiSetAlertLevel(int level);
+// One full-screen flash on the OK/warn -> critical crossing (edge-triggered by caller).
+void uiAlertFlash();
 // Full draw of one page (clears + header + body). Replaces uiDashboard on the S3.
 void uiRenderPage(uint8_t page, const UsageData& data, unsigned long lastFetchMs, int rssi, int batPct);
 // In-place time tick for the current page (no full clear) — replaces uiDashboardClock.

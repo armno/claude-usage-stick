@@ -330,8 +330,15 @@ static TFT_eSprite& dashTarget() {
   #define UI_PUSH_DASH() halFlush()
 #endif
 
-static uint16_t barColor(float) {
+static uint16_t barColor(float pct) {
+#ifdef PAGED_UI
+    if (pct >= ALERT_CRIT_PCT) return C_CRIT;
+    if (pct >= ALERT_WARN_PCT) return C_WARN;
+    return C_OK;
+#else
+    (void)pct;
     return C_TEXT;
+#endif
 }
 
 // Right-aligned reset countdown that rides on a usage bar's label row (the
@@ -383,6 +390,17 @@ static void drawBar(GFX& g, int x, int y, int w, int h, float pct, const char* l
 
 #ifdef MANGO_UI
 static ModelStatus s_modelStatus = {true, true, true, true, false};
+
+#ifdef PAGED_UI
+static int s_alertLevel = 0;   // 0 ok, 1 warn, 2 critical
+void uiSetAlertLevel(int level) { s_alertLevel = level; }
+void uiAlertFlash() {
+    halClear(C_CRIT);
+    halFlush();
+    delay(150);
+    // The caller's next uiRenderPage repaints the page over this flash.
+}
+#endif
 
 void uiSetModelStatus(const ModelStatus& s) {
     s_modelStatus = s;
@@ -655,8 +673,26 @@ static void drawHeaderRight(TFT_eSPI& g, int rssi, unsigned long ago, int batPct
 
     char as[12];
     snprintf(as, sizeof(as), "%lus", ago);
-    g.setCursor(x - 6 - (int)strlen(as) * 6, 5);
+    int agoX = x - 6 - (int)strlen(as) * 6;
+    g.setCursor(agoX, 5);
     g.print(as);
+
+#ifdef PAGED_UI
+    // Usage alert dot (5h level only), left of the ago counter.
+    int dotX = agoX - 12;
+    if (s_alertLevel >= 2)      g.fillCircle(dotX, 9, 4, C_CRIT);
+    else if (s_alertLevel >= 1) g.fillCircle(dotX, 9, 4, C_WARN);
+    // Model-down marker — distinct from the usage dot, visible on every page.
+    bool anyDown = s_modelStatus.ok &&
+        (!s_modelStatus.haikuUp || !s_modelStatus.sonnetUp ||
+         !s_modelStatus.opusUp  || !s_modelStatus.fableUp);
+    if (anyDown) {
+        g.setTextColor(C_CRIT, C_HEAD);
+        g.setTextSize(1);
+        g.setCursor(dotX - 18, 5);
+        g.print("!M");
+    }
+#endif
 }
 
 #ifdef PAGED_UI
