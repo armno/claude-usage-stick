@@ -27,7 +27,7 @@ void uiBlinkTick(bool closed);
 #ifdef PAGED_UI
 // Multi-page UI (T-Display S3). Pages are dispatched internally by uiRenderPage;
 // main.cpp drives navigation via currentPage and uiPageCount().
-enum UiPage { UI_PAGE_USAGE, UI_PAGE_MODELS, UI_PAGE_HISTORY, UI_PAGE_COUNT };
+enum UiPage { UI_PAGE_USAGE, UI_PAGE_MODELS, UI_PAGE_HISTORY, UI_PAGE_DEVICE, UI_PAGE_COUNT };
 uint8_t uiPageCount();
 // 5h alert level for the header dot + flash: 0 ok, 1 warn, 2 critical.
 void uiSetAlertLevel(int level);

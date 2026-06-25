@@ -3,6 +3,7 @@
 #include "hal.h"
 #include "history.h"
 #include <time.h>
+#include <WiFi.h>
 
 // Shared helper — no display calls, safe before any #ifdef
 static void fmtCountdown(uint32_t epoch, char* out, size_t len) {
@@ -794,10 +795,42 @@ static void uiPageHistory(const UsageData& data, unsigned long lastFetchMs, int 
     halFlush();
 }
 
+static int drawKV(TFT_eSPI& g, int y, const char* key, const char* val) {
+    g.setTextSize(1);
+    g.setTextColor(C_DIM, C_BG);  g.setCursor(SX(10), y); g.print(key);
+    g.setTextColor(C_TEXT, C_BG); g.setCursor(SX(78), y); g.print(val);
+    return y + SY(16);   // 9 rows from y=26 -> last at 154, clears the 170px panel
+}
+
+static void uiPageDevice(const UsageData& data, unsigned long lastFetchMs, int rssi, int batPct) {
+    (void)data;
+    auto& g = lcd;
+    halClear(C_BG);
+    unsigned long ago = (millis() - lastFetchMs) / 1000;
+    drawTopBar(g, rssi, ago, batPct);
+
+    char buf[40];
+    int y = SY(26);
+    y = drawKV(g, y, "IP",   WiFi.localIP().toString().c_str());
+    snprintf(buf, sizeof(buf), "%d dBm", rssi);                 y = drawKV(g, y, "WiFi", buf);
+    y = drawKV(g, y, "SSID", WiFi.SSID().c_str());
+    unsigned long s = millis() / 1000;
+    snprintf(buf, sizeof(buf), "%lud %luh %lum", s / 86400, (s % 86400) / 3600, (s % 3600) / 60);
+    y = drawKV(g, y, "Up", buf);
+    snprintf(buf, sizeof(buf), "%uk free", (unsigned)(ESP.getFreeHeap() / 1024));   y = drawKV(g, y, "Heap", buf);
+    snprintf(buf, sizeof(buf), "%.1fM free", ESP.getFreePsram() / 1048576.0);       y = drawKV(g, y, "PSRAM", buf);
+    if (batPct >= 0) { snprintf(buf, sizeof(buf), "%d%%", batPct); y = drawKV(g, y, "Bat", buf); }
+    snprintf(buf, sizeof(buf), "%d/%d%%", ALERT_WARN_PCT, ALERT_CRIT_PCT); y = drawKV(g, y, "Alerts", buf);
+    drawKV(g, y, "FW", FW_VERSION " Mango");
+
+    halFlush();
+}
+
 void uiRenderPage(uint8_t page, const UsageData& data, unsigned long lastFetchMs, int rssi, int batPct) {
     switch (page) {
         case UI_PAGE_MODELS:  uiPageModels(data, lastFetchMs, rssi, batPct);  break;
         case UI_PAGE_HISTORY: uiPageHistory(data, lastFetchMs, rssi, batPct); break;
+        case UI_PAGE_DEVICE:  uiPageDevice(data, lastFetchMs, rssi, batPct);  break;
         case UI_PAGE_USAGE:
         default:              uiPageUsage(data, lastFetchMs, rssi, batPct);   break;
     }
