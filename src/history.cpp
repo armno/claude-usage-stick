@@ -1,8 +1,5 @@
 #include "history.h"
 
-// ~100 samples ~= 3.3h at the 120s default poll — covers most of the 5h window.
-#define HISTORY_CAP 100
-
 static uint8_t  s_buf[HISTORY_CAP];
 static uint16_t s_head  = 0;       // next write index
 static uint16_t s_count = 0;
@@ -36,4 +33,32 @@ int historyTrend() {
     if (d >  0.5f) return 1;
     if (d < -0.5f) return -1;
     return 0;
+}
+
+void historySnapshot(HistorySnapshot& out, uint32_t h5ResetEpoch) {
+    out.version = HISTORY_SNAPSHOT_VERSION;
+    for (uint16_t i = 0; i < HISTORY_CAP; i++) out.buf[i] = s_buf[i];
+    out.head         = s_head;
+    out.count        = s_count;
+    out.prev7d       = s_prev7d;
+    out.cur7d        = s_cur7d;
+    out.have7d       = s_have7d ? 1 : 0;
+    out.h5ResetEpoch = h5ResetEpoch;
+}
+
+void historyRestore(const HistorySnapshot& in) {
+    for (uint16_t i = 0; i < HISTORY_CAP; i++) s_buf[i] = in.buf[i];
+    s_head   = in.head;
+    s_count  = in.count;
+    s_prev7d = in.prev7d;
+    s_cur7d  = in.cur7d;
+    s_have7d = in.have7d != 0;
+}
+
+void historyReset() {
+    s_head   = 0;
+    s_count  = 0;
+    s_have7d = false;
+    s_prev7d = 0.0f;
+    s_cur7d  = 0.0f;
 }
