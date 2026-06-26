@@ -11,19 +11,12 @@ Board scope is T-Display S3 (Mango) unless noted.
   follow-on page once history lands.
 - **7d usage-history sparkline** — the spec keeps only a 7d trend arrow. A real 7d sparkline
   needs a second, coarsely-decimated ring buffer (~1 sample / 15 min over several days).
-- **Persist history across reboots** — currently RAM-only. Would need occasional NVS
-  checkpoints; weigh against flash wear.
 - **Runtime config in the setup portal** — surface the alert thresholds (now hardcoded 50/80)
   and the timezone (now hardcoded UTC+7) as portal fields instead of `config.h` constants.
 - **Auto-rotating / hybrid navigation** — pages cycle on their own every N seconds; A pauses.
   Manual paging was chosen for v2.2.0; revisit if hands-free desk viewing is wanted.
 - **Idle auto-return to Usage** — after N minutes idle, snap back to page 0. Chosen behavior
   is to stay put.
-- **Audio / haptic alerts** — a buzzer or LED for non-visual alerts. The T-Display S3 has
-  neither built in (would need a GPIO-wired buzzer); the **M5StickC Plus has a buzzer**, so
-  this pairs well with a tier-S port.
-- **Port paged UI + alerts to other boards** — M5StickC Plus (tier S) and the Clarity boards
-  keep the single dashboard today. The paging scheme assumes the S3's two-button layout.
 
 ## Broader ideas (brainstorm directions not taken)
 
