@@ -37,6 +37,9 @@ static int         pollMs     = DEFAULT_POLL_SEC * 1000;
 static uint8_t     brightness = DEFAULT_BRIGHTNESS;
 #ifdef PAGED_UI
 static uint8_t currentPage = 0;   // UI_PAGE_* — Button A cycles, refresh() redraws
+static HistorySnapshot pendingHist;            // snapshot loaded from NVS on boot
+static bool            havePendingHist = false; // pendingHist holds a valid blob
+static bool            histValidated   = false; // first-fetch staleness check done?
 #endif
 
 // ── PIN Entry (blocks until 4 digits confirmed) ────────
@@ -99,7 +102,22 @@ static void refresh() {
     }
     fetchUsage(token, usage);
 #ifdef PAGED_UI
-    if (usage.ok) historyPush(usage.h5, usage.d7);
+    if (usage.ok) {
+        if (!histValidated) {
+            // First good fetch after boot: if the 5h window rolled over while we
+            // were off, the restored samples are stale — drop them.
+            if (havePendingHist && pendingHist.h5ResetEpoch != usage.h5ResetEpoch)
+                historyReset();
+            histValidated = true;
+        }
+        historyPush(usage.h5, usage.d7);
+
+        HistorySnapshot snap;
+        historySnapshot(snap, usage.h5ResetEpoch);
+        prefs.begin(NVS_NAMESPACE, false);
+        prefs.putBytes("hist", &snap, sizeof(snap));
+        prefs.end();
+    }
 #endif
 #ifdef MANGO_UI
     fetchModelStatus(modelStatus);   // failure keeps last-known state
@@ -222,7 +240,16 @@ void setup() {
     prefs.getBytes("blob", &blob, sizeof(blob));
     pollMs     = prefs.getInt("poll_sec", DEFAULT_POLL_SEC) * 1000;
     brightness = prefs.getInt("brightness", DEFAULT_BRIGHTNESS);
+#ifdef PAGED_UI
+    size_t histBytes = prefs.getBytes("hist", &pendingHist, sizeof(pendingHist));
+    havePendingHist  = (histBytes == sizeof(pendingHist) &&
+                        pendingHist.version == HISTORY_SNAPSHOT_VERSION);
+#endif
     prefs.end();
+
+#ifdef PAGED_UI
+    if (havePendingHist) historyRestore(pendingHist);  // show saved data immediately
+#endif
 
     halSetBrightness(brightness);
 
