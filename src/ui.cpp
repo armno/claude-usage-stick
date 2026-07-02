@@ -292,6 +292,7 @@ void uiDashboardClock(const UsageData& data, unsigned long lastFetchMs, int rssi
 #define C_HEAD_DK 0xA244   // dimmed Claude orange — empty wifi bars, hairline dividers
 #define C_SONNET  0xB542   // dimmed yellow (~RGB 180,170,20) — Sonnet mascot
 #define C_HAIKU   0xCB33   // dimmed pink (~#CC6699) — Haiku mascot
+#define C_FABLE   0xF800   // pure red (#FF0000) — Fable mascot
 
 // The base layout is designed for the ~240x135 LCD. Larger panels scale the
 // coordinates and font up so text stays readable and the layout fills the screen.
@@ -478,8 +479,8 @@ static void drawMascot(TFT_eSPI& g, int x, int y, int W, int rh, uint16_t color,
 #define MASCOT_X(i)  (MASCOT_CX(i) - MASCOT_W / 2)
 
 // Per-model mascot colour when healthy (HAIKU, SONNET, OPUS, FABLE).
-// Opus + Fable keep Claude orange; a dead/unknown model overrides this with C_DIM.
-static const uint16_t MASCOT_COLORS[4] = {C_HAIKU, C_SONNET, C_HEAD, C_HEAD};
+// Opus keeps Claude orange; a dead/unknown model overrides this with C_DIM.
+static const uint16_t MASCOT_COLORS[4] = {C_HAIKU, C_SONNET, C_HEAD, C_FABLE};
 
 // Size-2 countdown values — padded, opaque print overwrites in place so the
 // 10s clock tick can repaint them without clearing first.

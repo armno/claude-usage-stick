@@ -46,5 +46,8 @@ bool halBtnAIsPressed();
 bool halBtnBIsPressed();
 int  halBatPercent();
 void halSetBrightness(uint8_t level);
+#ifdef BOARD_TDISPLAY_S3
+void halSetBacklightRaw(uint8_t pwm);  // ledc duty 0-255, bypasses brightness levels
+#endif
 void halFlush();
 void halClear(uint16_t color);

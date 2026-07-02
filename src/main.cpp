@@ -42,6 +42,19 @@ static bool            havePendingHist = false; // pendingHist holds a valid blo
 static bool            histValidated   = false; // first-fetch staleness check done?
 #endif
 
+#ifdef BOARD_TDISPLAY_S3
+// Dim after idle: see docs/superpowers/specs/2026-07-02-dim-after-idle-design.md
+static unsigned long lastInteraction = 0;   // millis() of the last button press
+static bool          dimmed = false;
+static void wakeScreen() {
+    dimmed = false;
+    halSetBrightness(brightness);
+    lastInteraction = millis();
+}
+#else
+static const bool    dimmed = false;        // other boards never dim
+#endif
+
 // ── PIN Entry (blocks until 4 digits confirmed) ────────
 static void enterPin(char* pinOut, int maxLen) {
     int digits[4] = {0, 0, 0, 0};
@@ -131,7 +144,10 @@ static void refresh() {
     uiSetAlertLevel(level);
     // Fires once on the OK/warn->crit crossing; the uiRenderPage() call later in
     // refresh() repaints over the red flash. Keep that render after this block.
-    if (level >= 2 && prevAlertLevel < 2) uiAlertFlash();
+    if (level >= 2 && prevAlertLevel < 2) {
+        if (dimmed) wakeScreen();   // wake first so the flash plays at full brightness
+        uiAlertFlash();
+    }
     prevAlertLevel = level;
     uiRenderPage(currentPage, usage, lastFetch, WiFi.RSSI(), halBatPercent());
 #else
@@ -307,6 +323,23 @@ void setup() {
 void loop() {
     halUpdate();
 
+#ifdef BOARD_TDISPLAY_S3
+    // A press while dimmed only wakes: both tap flags are consumed here so the
+    // handlers below never see it. Holding a button counts as interaction.
+    if (dimmed) {
+        bool wakeA = halBtnAWasPressed();
+        bool wakeB = halBtnBWasPressed();
+        if (wakeA || wakeB) wakeScreen();
+    } else if (halBtnAIsPressed() || halBtnBIsPressed()) {
+        lastInteraction = millis();
+    }
+    if (!dimmed && brightness > 0 &&
+        millis() - lastInteraction > DIM_TIMEOUT_SEC * 1000UL) {
+        dimmed = true;
+        halSetBacklightRaw(DIM_BACKLIGHT_PWM);
+    }
+#endif
+
 #ifdef PAGED_UI
     // Tap A = next page; hold A (~600ms) = flip; B = brightness; A+B = refresh.
     // A solo action commits only after the combo window so B can still join; A is
@@ -384,9 +417,9 @@ void loop() {
     static unsigned long lastBlink = 0;
     static bool eyesClosed = false;
 #ifdef PAGED_UI
-    bool blinkActive = (currentPage == UI_PAGE_USAGE);
+    bool blinkActive = (currentPage == UI_PAGE_USAGE) && !dimmed;
 #else
-    bool blinkActive = true;
+    bool blinkActive = !dimmed;
 #endif
     if (eyesClosed && blinkActive && millis() - lastBlink > 150) {
         uiBlinkTick(false);
@@ -401,7 +434,7 @@ void loop() {
 #endif
 
     static unsigned long lastRedraw = 0;
-    if (millis() - lastRedraw > 10000) {
+    if (!dimmed && millis() - lastRedraw > 10000) {
         // Only time passed (not data) — update the clock/countdowns in place.
 #ifdef PAGED_UI
         uiRenderPageClock(currentPage, usage, lastFetch, WiFi.RSSI());
