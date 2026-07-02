@@ -50,6 +50,11 @@ static void wakeScreen() {
     dimmed = false;
     halSetBrightness(brightness);
     lastInteraction = millis();
+#ifdef PAGED_UI
+    // The 10s clock tick was paused while dimmed — repaint the header
+    // (battery/ago) and countdowns now instead of up to 10s after wake.
+    uiRenderPageClock(currentPage, usage, lastFetch, WiFi.RSSI());
+#endif
 }
 #else
 static const bool    dimmed = false;        // other boards never dim

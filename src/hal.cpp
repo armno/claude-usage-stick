@@ -97,9 +97,16 @@ bool halBtnAIsPressed()  { return !digitalRead(BTN_A_PIN); }
 bool halBtnBIsPressed()  { return !digitalRead(BTN_B_PIN); }
 
 int halBatPercent() {
-    uint16_t raw = analogRead(BAT_ADC);
-    float v = (raw / 4095.0f) * 3.3f * 2.0f;
-    return constrain((int)((v - 3.3f) / 0.85f * 100), 0, 100);
+    // The linear map puts 1% at ~8.5mV, so a raw single sample jumps with
+    // backlight/WiFi load changes. Average a burst, then smooth across calls.
+    uint32_t raw = 0;
+    for (int i = 0; i < 8; i++) raw += analogRead(BAT_ADC);
+    float v = (raw / 8.0f / 4095.0f) * 3.3f * 2.0f;
+    int percent = constrain((int)((v - 3.3f) / 0.85f * 100), 0, 100);
+    static float smoothed = -1.0f;
+    if (smoothed < 0) smoothed = percent;
+    smoothed += (percent - smoothed) * 0.2f;
+    return (int)(smoothed + 0.5f);
 }
 
 void halSetBrightness(uint8_t level) {
