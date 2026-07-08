@@ -522,7 +522,7 @@ static void drawStatusPanel(TFT_eSPI& g) {
 }
 
 // Repaint only the eye cells of the healthy mascots — drawn straight to the panel,
-// so the 2s "I'm alive" blink costs no full redraw.
+// so the periodic "I'm alive" blink costs no full redraw.
 void uiBlinkTick(bool closed) {
     bool up[4] = {s_modelStatus.haikuUp, s_modelStatus.sonnetUp,
                   s_modelStatus.opusUp,  s_modelStatus.fableUp};
@@ -600,7 +600,7 @@ static void drawStatusPanel(TFT_eSPI& g) {
 }
 
 // Blink the panel mascot's eyes — only when he's the healthy (orange) Clawd; the
-// gray "something's down"/unknown Clawd stays still. The 2s liveness blink.
+// gray "something's down"/unknown Clawd stays still. The periodic liveness blink.
 void uiBlinkTick(bool closed) {
     bool up[4] = {s_modelStatus.haikuUp, s_modelStatus.sonnetUp,
                   s_modelStatus.opusUp,  s_modelStatus.fableUp};

@@ -78,10 +78,3 @@
 // them. WARN=50 mirrors the compact-at-50% habit on a 1M-context session; CRIT=80 = act now.
 #define ALERT_WARN_PCT          50
 #define ALERT_CRIT_PCT          80
-
-// ── Dim after idle (T-Display S3) ────────────────────────
-// Backlight drops to a faint glow after this long without a button press;
-// blink + clock repaints pause. Any button (or an OK/warn->crit alert
-// crossing) wakes it. See docs/superpowers/specs/2026-07-02-dim-after-idle-design.md
-#define DIM_TIMEOUT_SEC         120
-#define DIM_BACKLIGHT_PWM       20       // ledc duty 0-255 while dimmed

@@ -42,24 +42,6 @@ static bool            havePendingHist = false; // pendingHist holds a valid blo
 static bool            histValidated   = false; // first-fetch staleness check done?
 #endif
 
-#ifdef BOARD_TDISPLAY_S3
-// Dim after idle: see docs/superpowers/specs/2026-07-02-dim-after-idle-design.md
-static unsigned long lastInteraction = 0;   // millis() of the last button press
-static bool          dimmed = false;
-static void wakeScreen() {
-    dimmed = false;
-    halSetBrightness(brightness);
-    lastInteraction = millis();
-#ifdef PAGED_UI
-    // The 10s clock tick was paused while dimmed — repaint the header
-    // (battery/ago) and countdowns now instead of up to 10s after wake.
-    uiRenderPageClock(currentPage, usage, lastFetch, WiFi.RSSI());
-#endif
-}
-#else
-static const bool    dimmed = false;        // other boards never dim
-#endif
-
 // ── PIN Entry (blocks until 4 digits confirmed) ────────
 static void enterPin(char* pinOut, int maxLen) {
     int digits[4] = {0, 0, 0, 0};
@@ -149,10 +131,7 @@ static void refresh() {
     uiSetAlertLevel(level);
     // Fires once on the OK/warn->crit crossing; the uiRenderPage() call later in
     // refresh() repaints over the red flash. Keep that render after this block.
-    if (level >= 2 && prevAlertLevel < 2) {
-        if (dimmed) wakeScreen();   // wake first so the flash plays at full brightness
-        uiAlertFlash();
-    }
+    if (level >= 2 && prevAlertLevel < 2) uiAlertFlash();
     prevAlertLevel = level;
     uiRenderPage(currentPage, usage, lastFetch, WiFi.RSSI(), halBatPercent());
 #else
@@ -165,9 +144,9 @@ static void refresh() {
 // and a random 8-char password into caller buffers. apPass must be at least 9 bytes.
 // The C3-OLED has no readable display during setup, so it uses an open AP (empty pass).
 static void makeApCredentials(char* apName, size_t nameLen, char* apPass) {
-    uint8_t mac[6];
-    esp_efuse_mac_get_default(mac);
-    snprintf(apName, nameLen, "ClaudeMonitor-%02X%02X", mac[4], mac[5]);
+    uint8_t suffix[2];
+    esp_fill_random(suffix, sizeof(suffix));
+    snprintf(apName, nameLen, "ClaudeMonitor-%02X%02X", suffix[0], suffix[1]);
 #ifdef BOARD_ESP32C3_OLED
     apPass[0] = '\0';
 #else
@@ -328,23 +307,6 @@ void setup() {
 void loop() {
     halUpdate();
 
-#ifdef BOARD_TDISPLAY_S3
-    // A press while dimmed only wakes: both tap flags are consumed here so the
-    // handlers below never see it. Holding a button counts as interaction.
-    if (dimmed) {
-        bool wakeA = halBtnAWasPressed();
-        bool wakeB = halBtnBWasPressed();
-        if (wakeA || wakeB) wakeScreen();
-    } else if (halBtnAIsPressed() || halBtnBIsPressed()) {
-        lastInteraction = millis();
-    }
-    if (!dimmed && brightness > 0 &&
-        millis() - lastInteraction > DIM_TIMEOUT_SEC * 1000UL) {
-        dimmed = true;
-        halSetBacklightRaw(DIM_BACKLIGHT_PWM);
-    }
-#endif
-
 #ifdef PAGED_UI
     // Tap A = next page; hold A (~600ms) = flip; B = brightness; A+B = refresh.
     // A solo action commits only after the combo window so B can still join; A is
@@ -418,20 +380,20 @@ void loop() {
     }
 
 #ifdef MANGO_UI
-    // Healthy mascots blink every 2s (eyes shut for 150ms) to show liveness.
+    // Healthy mascots blink every 60s (eyes shut for 150ms) to show liveness.
     static unsigned long lastBlink = 0;
     static bool eyesClosed = false;
 #ifdef PAGED_UI
-    bool blinkActive = (currentPage == UI_PAGE_USAGE) && !dimmed;
+    bool blinkActive = (currentPage == UI_PAGE_USAGE);
 #else
-    bool blinkActive = !dimmed;
+    bool blinkActive = true;
 #endif
     if (eyesClosed && blinkActive && millis() - lastBlink > 150) {
         uiBlinkTick(false);
         eyesClosed = false;
     } else if (eyesClosed && !blinkActive) {
         eyesClosed = false;   // navigated away mid-blink: reset without drawing
-    } else if (!eyesClosed && blinkActive && usage.ok && millis() - lastBlink > 2000) {
+    } else if (!eyesClosed && blinkActive && usage.ok && millis() - lastBlink > 60000) {
         uiBlinkTick(true);
         eyesClosed = true;
         lastBlink = millis();
@@ -439,7 +401,7 @@ void loop() {
 #endif
 
     static unsigned long lastRedraw = 0;
-    if (!dimmed && millis() - lastRedraw > 10000) {
+    if (millis() - lastRedraw > 10000) {
         // Only time passed (not data) — update the clock/countdowns in place.
 #ifdef PAGED_UI
         uiRenderPageClock(currentPage, usage, lastFetch, WiFi.RSSI());

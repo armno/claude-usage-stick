@@ -114,8 +114,6 @@ void halSetBrightness(uint8_t level) {
     ledcWrite(0, vals[level]);
 }
 
-void halSetBacklightRaw(uint8_t pwm) { ledcWrite(0, pwm); }
-
 void halFlush() {}
 
 void halClear(uint16_t color) { lcd.fillScreen(color); }
