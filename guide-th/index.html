@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>คู่มือเครื่องดูโควตา Claude</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf7f2; --card:#ffffff; --ink:#26221e; --muted:#6b635a; --line:#e7e0d6;
+    --accent:#d9622b; --accent-soft:#fbe9df; --head:#ef7139; --warm:#f7a252;
+    --ok:#2f8f4e; --ok-soft:#e3f3e8; --warn:#b26b00; --warn-soft:#fff1d6;
+    --bad:#c0392b; --bad-soft:#fde4e1;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:"IBM Plex Sans Thai","Thonburi","Sukhumvit Set",system-ui,sans-serif;
+       font-size:17px;line-height:1.75}
+  .wrap{max-width:860px;margin:0 auto;padding:24px 16px 80px}
+  h1,h2,h3{line-height:1.35;margin:0}
+  h1{font-size:2rem}
+  h2{font-size:1.45rem}
+  h3{font-size:1.1rem;margin-top:22px}
+  p{margin:10px 0}
+  code,kbd,.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+  kbd{display:inline-block;min-width:1.9em;padding:1px 8px;border:1px solid #cfc6ba;border-bottom-width:3px;
+      border-radius:7px;background:#fff;font-size:.9em;text-align:center;line-height:1.5}
+  code.cmd{background:#26221e;color:#ffd9c2;padding:2px 8px;border-radius:6px;font-size:.92em}
+  strong{font-weight:700}
+
+  /* ── hero ── */
+  .hero{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:28px 24px;margin-bottom:28px}
+  .hero .sub{color:var(--muted);margin-top:6px}
+  .need{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:18px}
+  .need div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:.95rem}
+  .need b{display:block}
+  .time{display:inline-block;margin-top:14px;background:var(--accent-soft);color:var(--accent);
+        border-radius:999px;padding:2px 12px;font-weight:600;font-size:.9rem}
+
+  /* ── overview ── */
+  .flow{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 30px;padding:0;list-style:none}
+  .flow li{flex:1 1 120px;background:var(--card);border:1px solid var(--line);border-radius:10px;
+           padding:10px 12px;font-size:.92rem;line-height:1.5}
+  .flow li a{color:inherit;text-decoration:none}
+  .flow .n{display:block;color:var(--accent);font-weight:700;font-size:.82rem}
+
+  /* ── steps ── */
+  .step{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+        padding:24px 22px;margin-bottom:24px;break-inside:avoid}
+  .step-head{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+  .badge{flex:none;width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;
+         display:grid;place-items:center;font-weight:700;font-size:1.25rem}
+  .where{display:inline-block;font-size:.8rem;font-weight:600;border-radius:999px;padding:0 10px;
+         background:var(--bg);border:1px solid var(--line);color:var(--muted);margin-left:auto;white-space:nowrap}
+
+  ol.do{padding-left:0;list-style:none;counter-reset:d;margin:14px 0}
+  ol.do>li{counter-increment:d;position:relative;padding-left:40px;margin:12px 0}
+  ol.do>li::before{content:counter(d);position:absolute;left:0;top:2px;width:28px;height:28px;border-radius:50%;
+       border:2px solid var(--accent);color:var(--accent);font-weight:700;display:grid;place-items:center;font-size:.9rem;line-height:1}
+
+  .note{border-radius:10px;padding:12px 14px;margin:14px 0;font-size:.95rem;border-left:5px solid}
+  .note.tip{background:var(--ok-soft);border-color:var(--ok)}
+  .note.warn{background:var(--warn-soft);border-color:var(--warn)}
+  .note.bad{background:var(--bad-soft);border-color:var(--bad)}
+  .note b:first-child{display:block;margin-bottom:2px}
+
+  .fig{margin:18px 0}
+  .fig figcaption{font-size:.85rem;color:var(--muted);margin-top:8px;text-align:center}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+  @media (max-width:680px){ .two{grid-template-columns:1fr} }
+
+  /* numbered annotation markers + legend */
+  .mk{position:absolute;width:24px;height:24px;border-radius:50%;background:#1ea7fd;color:#fff;
+      font:700 13px/24px "IBM Plex Sans Thai",sans-serif;text-align:center;transform:translate(-50%,-50%);
+      box-shadow:0 0 0 2px #fff,0 2px 6px rgba(0,0,0,.35);z-index:3}
+  ul.legend{list-style:none;padding:0;margin:12px 0}
+  ul.legend li{position:relative;padding-left:34px;margin:8px 0;font-size:.95rem}
+  ul.legend li i{position:absolute;left:0;top:3px;width:24px;height:24px;border-radius:50%;background:#1ea7fd;
+       color:#fff;font:700 13px/24px "IBM Plex Sans Thai",sans-serif;text-align:center;font-style:normal}
+
+  /* ── device LCD mock (320x170, positions copied from src/ui.cpp) ── */
+  .device{width:100%;background:#202022;border-radius:16px;padding:14px;box-shadow:0 6px 18px rgba(0,0,0,.18);max-width:520px;margin:0 auto}
+  .lcd{position:relative;aspect-ratio:320/170;background:#000;container-type:inline-size;border-radius:3px;
+       color:#fff;font-family:"IBM Plex Mono",monospace;line-height:1;overflow:visible}
+  .lcd .x{position:absolute;white-space:nowrap}
+  .s1{font-size:3.1cqw}.s2{font-size:6cqw}.s3{font-size:8.5cqw;font-weight:600}
+  .dim{color:#7b7b7b}.gray{color:#4a4a4a}.cy{color:var(--warm)}.or{color:var(--head)}.red{color:#ff2a2a}.amb{color:#ffa500}
+  .hbar{position:absolute;left:0;top:0;width:100%;height:10.6%;background:var(--head)}
+  .hbar .x{top:50%;transform:translateY(-50%)}
+  .pbox{position:absolute;border:1px solid #7b7b7b;display:grid;place-items:center}
+  .pbox.on{border:2px solid var(--warm)}
+  .track{position:absolute;background:#212121}
+  .fill{position:absolute;left:0;top:0;bottom:0;background:#fff}
+  .lcd svg.clawd{position:absolute;height:auto;aspect-ratio:18/10}
+  .tl .lcd .s1{font-size:6.5cqw}.tl .lcd .s2{font-size:9cqw}
+
+  .mini{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  @media (max-width:680px){ .mini{grid-template-columns:1fr 1fr} }
+  .mini .device{padding:6px;border-radius:8px}
+  .mini p{text-align:center;font-size:.85rem;margin:6px 0 0}
+
+  /* ── mac mocks ── */
+  .win{border-radius:10px;overflow:hidden;box-shadow:0 8px 22px rgba(0,0,0,.18);border:1px solid #d5d0c9}
+  .win .tb{height:30px;background:#ece9e5;display:flex;align-items:center;gap:7px;padding:0 12px;
+           font-size:.78rem;color:#6d665e;position:relative}
+  .dot{width:12px;height:12px;border-radius:50%}
+  .tb .title{position:absolute;left:0;right:0;text-align:center;pointer-events:none}
+  .term{background:#1e1e1e;color:#e8e8e8;font-family:"IBM Plex Mono",monospace;font-size:.82rem;
+        line-height:1.6;padding:14px 16px 14px 46px;position:relative;white-space:pre-wrap;word-break:break-all}
+  .term .p{color:#8bd17c}
+  .term .tok{background:#5a3cb4;color:#fff;border-radius:3px;padding:0 2px}
+  .term .g{color:#9a9a9a}
+  .addr{background:#fff;border:1px solid #d5d0c9;border-radius:7px;margin:8px 12px;padding:4px 10px;
+        font-size:.85rem;color:#333;text-align:center;font-family:"IBM Plex Mono",monospace;position:relative}
+
+  .menubar{background:#e9e6e2;border-radius:10px 10px 0 0;height:30px;display:flex;justify-content:flex-end;
+           align-items:center;gap:16px;padding:0 14px;font-size:.8rem;color:#333;position:relative}
+  .wifimenu{background:rgba(250,250,250,.97);border:1px solid #d5d0c9;border-radius:10px;
+            margin:4px 0 0 auto;width:min(300px,100%);padding:8px;font-size:.88rem;box-shadow:0 10px 24px rgba(0,0,0,.15);position:relative}
+  .wifimenu .row{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:6px}
+  .wifimenu .row.hl{background:#1e6ff0;color:#fff}
+  .wifimenu .lbl{font-size:.75rem;color:#888;padding:4px 8px}
+  .wifimenu .sw{margin-left:auto;width:34px;height:20px;border-radius:999px;background:#1e6ff0;position:relative}
+  .wifimenu .sw::after{content:"";position:absolute;right:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff}
+
+  /* copy of the device's real setup page (src/provision.cpp) */
+  .portal{background:#191919;color:#e0e0e0;padding:12px;font-family:system-ui,-apple-system,sans-serif;font-size:13px;line-height:1.35}
+  .portal .card{background:#252525;border:1px solid #3a3a3a;border-radius:12px;padding:14px 16px;position:relative}
+  .portal h4{color:#e8733a;font-size:1.35em;margin:0 0 2px}
+  .portal .sub{color:#888;font-size:.85em;margin-bottom:12px}
+  .portal .sec{font-size:.72em;color:#888;letter-spacing:1px;text-transform:uppercase;margin:10px 0 8px}
+  .portal .fld{margin-bottom:9px;position:relative}
+  .portal label{display:block;font-size:.85em;color:#888;margin-bottom:3px}
+  .portal .in{border:1px solid #3a3a3a;border-radius:8px;background:#191919;padding:7px 10px;color:#e0e0e0;min-height:32px}
+  .portal .in.ph{color:#666}
+  .portal .hint{font-size:.75em;color:#888;margin-top:3px}
+  .portal .rw{display:flex;gap:10px}.portal .rw .fld{flex:1}
+  .portal .btn{background:#e8733a;color:#191919;font-weight:700;text-align:center;border-radius:8px;padding:9px;margin-top:10px}
+  .portal hr{border:0;border-top:1px solid #3a3a3a;margin:10px 0}
+  .portal .okmsg{color:#4f4;text-align:center;margin-top:8px}
+  .portal .mk{right:-34px;left:auto;transform:translateY(-50%);top:50%}
+  @media (max-width:520px){ .portal .mk{right:-8px} }
+
+  /* PIN worked example */
+  .pinex{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+  .pinex>div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center}
+  .pinex .big{font:600 2rem/1 "IBM Plex Mono",monospace;color:var(--accent)}
+  .presses{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;margin-top:8px}
+  .chip{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:6px;font:700 12px/1 "IBM Plex Mono",monospace;color:#fff}
+  .chip.a{background:#1ea7fd}.chip.b{background:var(--accent)}
+  @media (max-width:520px){ .pinex{grid-template-columns:1fr 1fr} }
+
+  /* reset timeline */
+  .tl{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+  @media (max-width:680px){ .tl{grid-template-columns:1fr 1fr} }
+  .tl>div{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px}
+  .tl .cap{font-size:.88rem;line-height:1.5;margin-top:8px}
+  .tl .cap b{color:var(--accent)}
+
+  table.keys{width:100%;border-collapse:collapse;margin:12px 0;font-size:.95rem}
+  table.keys th,table.keys td{border-bottom:1px solid var(--line);padding:10px 8px;text-align:left;vertical-align:top}
+  table.keys th{font-size:.85rem;color:var(--muted);font-weight:600}
+
+  details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:10px 0}
+  summary{cursor:pointer;font-weight:600}
+  details p{margin:8px 0 2px}
+
+  .board svg{width:100%;height:auto;display:block;max-width:560px;margin:0 auto}
+  .test{width:100%;border-collapse:separate;border-spacing:0 8px}
+  .test td{background:var(--bg);padding:10px 12px;vertical-align:middle;font-size:.95rem}
+  .test td:first-child{border-radius:10px 0 0 10px;width:44%}
+  .test td:last-child{border-radius:0 10px 10px 0;font-weight:700}
+  .tag{display:inline-block;padding:0 10px;border-radius:6px;color:#fff;font-weight:700}
+  .tag.a{background:#1ea7fd}.tag.b{background:var(--accent)}.tag.r{background:#555}
+
+  footer{color:var(--muted);font-size:.85rem;text-align:center;margin-top:30px}
+
+  @media print{
+    body{background:#fff;font-size:13px}
+    .step,.hero,details{border-color:#ccc;box-shadow:none}
+    details{display:block} details>*{display:block}
+    .wrap{padding:0}
+  }
+</style>
+</head>
+<body>
+
+<!-- Clawd mascot bitmap from src/ui.cpp (CLAWD_ROWS, 18 x 5) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="clawd" viewBox="0 0 18 10" shape-rendering="crispEdges">
+      <rect x="3" y="0" width="12" height="2"/>
+      <rect x="3" y="2" width="2" height="2"/><rect x="6" y="2" width="6" height="2"/><rect x="13" y="2" width="2" height="2"/>
+      <rect x="1" y="4" width="16" height="2"/>
+      <rect x="3" y="6" width="12" height="2"/>
+      <rect x="4" y="8" width="1" height="2"/><rect x="6" y="8" width="1" height="2"/>
+      <rect x="11" y="8" width="1" height="2"/><rect x="13" y="8" width="1" height="2"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+<!-- ═════════════ HERO ═════════════ -->
+<header class="hero">
+  <h1>เปลี่ยนเครื่องดูโควตา Claude<br>ให้เป็นบัญชีของเรา</h1>
+  <p class="sub">ตอนนี้เครื่องเล็กๆ นี้ยังแสดงโควตาของบัญชีเดิมอยู่ ทำตามขั้นตอนข้างล่างทีละข้อ แล้วเครื่องจะแสดงโควตา Claude ของเราแทน ไม่ต้องรู้เรื่องโปรแกรมหรือบอร์ดอะไรเลย</p>
+  <span class="time">ใช้เวลาประมาณ 15 นาที · ทำครั้งเดียวจบ</span>
+
+  <div class="need">
+    <div><b>⊡ ตัวเครื่อง</b>เสียบสายชาร์จไว้ด้วยจะดีที่สุด</div>
+    <div><b>⌘ เครื่อง Mac ของเรา</b>ที่มี Claude Code อยู่แล้ว</div>
+    <div><b>≋ ชื่อและรหัส WiFi บ้าน</b>ต้องเป็น WiFi แบบ 2.4 GHz (ดูขั้นตอนที่ 4)</div>
+    <div><b>✎ กระดาษกับปากกา</b>ไว้จดรหัส PIN 4 ตัวที่จะตั้งเอง</div>
+  </div>
+</header>
+
+<ul class="flow">
+  <li><a href="#s1"><span class="n">ขั้นตอนที่ 1</span>หาว่าปุ่มไหนคือ A, B</a></li>
+  <li><a href="#s2"><span class="n">ขั้นตอนที่ 2</span>สร้างรหัส token บน Mac</a></li>
+  <li><a href="#s3"><span class="n">ขั้นตอนที่ 3</span>ล้างข้อมูลเก่าในเครื่อง</a></li>
+  <li><a href="#s4"><span class="n">ขั้นตอนที่ 4</span>ให้ Mac ต่อ WiFi ของเครื่อง แล้วกรอกข้อมูล</a></li>
+  <li><a href="#s5"><span class="n">ขั้นตอนที่ 5</span>ใส่ PIN บนเครื่อง</a></li>
+  <li><a href="#s6"><span class="n">ขั้นตอนที่ 6</span>อ่านหน้าจอ</a></li>
+</ul>
+
+<!-- ═════════════ STEP 1 ═════════════ -->
+<section class="step" id="s1">
+  <div class="step-head"><div class="badge">1</div><h2>รู้จักปุ่มบนเครื่อง</h2><span class="where">ที่ตัวเครื่อง</span></div>
+  <p>บนตัวเครื่องมีปุ่มเล็กๆ <strong>3 ปุ่ม</strong> ในคู่มือนี้จะเรียกว่า <span class="tag a">A</span> <span class="tag b">B</span> และ <span class="tag r">RST</span> (ปุ่มเริ่มเครื่องใหม่) ไม่มีใครจำได้ว่าปุ่มไหนเป็นปุ่มไหน เลยต้องลองกดดูก่อน <strong>ลองกดได้เลย ไม่มีอะไรเสีย</strong> เพราะเดี๋ยวเราจะล้างข้อมูลในเครื่องอยู่แล้ว</p>
+
+  <figure class="fig board">
+    <svg viewBox="0 0 560 250" role="img" aria-label="ภาพตัวเครื่องโดยประมาณ มีหน้าจอ ปุ่ม 3 ปุ่ม และช่องเสียบสาย USB-C">
+      <rect x="40" y="40" width="440" height="170" rx="16" fill="#2a2a2d"/>
+      <rect x="62" y="62" width="330" height="126" rx="4" fill="#000"/>
+      <text x="227" y="132" fill="#ef7139" font-family="IBM Plex Mono, monospace" font-size="15" text-anchor="middle">หน้าจอ</text>
+      <!-- front buttons -->
+      <circle cx="440" cy="90" r="13" fill="#d9d4cd"/><text x="440" y="95" text-anchor="middle" font-size="14" font-weight="700" fill="#333">?</text>
+      <circle cx="440" cy="160" r="13" fill="#d9d4cd"/><text x="440" y="165" text-anchor="middle" font-size="14" font-weight="700" fill="#333">?</text>
+      <!-- side button -->
+      <rect x="300" y="30" width="34" height="10" rx="3" fill="#d9d4cd"/><text x="317" y="22" text-anchor="middle" font-size="14" font-weight="700" fill="#333">?</text>
+      <!-- usb-c -->
+      <rect x="480" y="112" width="16" height="26" rx="5" fill="#9a958e"/>
+      <path d="M496 125 H540" stroke="#555" stroke-width="5" stroke-linecap="round"/>
+      <!-- battery -->
+      <rect x="150" y="214" width="120" height="30" rx="6" fill="#c9c2b8"/>
+      <text x="210" y="234" text-anchor="middle" font-size="13" fill="#333">แบตเตอรี่ (ด้านหลัง)</text>
+      <!-- labels -->
+      <text x="520" y="152" text-anchor="middle" font-size="13" fill="#6b635a">สาย USB-C</text>
+      <text x="80" y="28" font-size="13" fill="#6b635a">ปุ่มกด 3 ปุ่ม (ตรงที่มี ?)</text>
+    </svg>
+    <figcaption>ภาพนี้วาดให้ดูคร่าวๆ ตำแหน่งปุ่มของจริงอาจไม่ตรงกับภาพ ให้ใช้วิธีทดสอบข้างล่างแทน</figcaption>
+  </figure>
+
+  <h3>วิธีทดสอบ: กดทีละปุ่ม แล้วดูว่าหน้าจอเปลี่ยนยังไง</h3>
+  <p>ถ้าหน้าจอมืดอยู่ ให้กดปุ่มไหนก็ได้ 1 ครั้งก่อนเพื่อปลุกจอ (กดครั้งแรกแค่ปลุกจอ ยังไม่ทำอะไร) จากนั้นกดทีละปุ่ม:</p>
+
+  <table class="test">
+    <tr><td>หน้าจอดับไปแล้วเริ่มใหม่ ขึ้นคำว่า <span class="mono or">Claude Usage</span> กับแถบโหลด</td><td>ปุ่มนี้คือ <span class="tag r">RST</span></td></tr>
+    <tr><td>ถ้าจอขึ้น <span class="mono">UNLOCK PIN</span>: ตัวเลขในช่องเพิ่มขึ้น 1<br>ถ้าจอขึ้นกราฟ/ตัวเลข: หน้าจอเปลี่ยนเป็นหน้าอื่น</td><td>ปุ่มนี้คือ <span class="tag a">A</span></td></tr>
+    <tr><td>ถ้าจอขึ้น <span class="mono">UNLOCK PIN</span>: กรอบส้มเลื่อนไปช่องถัดไป<br>ถ้าจอขึ้นกราฟ/ตัวเลข: จอสว่างขึ้นหรือมืดลง</td><td>ปุ่มนี้คือ <span class="tag b">B</span></td></tr>
+  </table>
+
+  <div class="note tip"><b>✓ เคล็ดลับ</b>ติดสติกเกอร์เล็กๆ เขียน A, B, R ไว้ข้างปุ่ม จะได้ไม่ต้องจำ ขั้นตอนต่อไปต้องใช้ทุกปุ่ม</div>
+</section>
+
+<!-- ═════════════ STEP 2 ═════════════ -->
+<section class="step" id="s2">
+  <div class="step-head"><div class="badge">2</div><h2>สร้างรหัส token บน Mac</h2><span class="where">ที่ Mac (ต้องมีอินเทอร์เน็ต)</span></div>
+  <p>token คือรหัสยาวๆ ที่บอกเครื่องว่า "นี่คือบัญชี Claude ของเรา" เราสร้างมันเองได้จาก Claude Code บน Mac</p>
+
+  <ol class="do">
+    <li>เปิดแอป <strong>Terminal</strong>: กด <kbd>⌘</kbd> + <kbd>Space</kbd> พิมพ์คำว่า <code>Terminal</code> แล้วกด <kbd>↩ Enter</kbd></li>
+    <li>พิมพ์คำสั่งนี้ (หรือคัดลอกไปวาง) แล้วกด <kbd>↩ Enter</kbd><br><code class="cmd">claude setup-token</code></li>
+    <li>เว็บเบราว์เซอร์จะเปิดขึ้นมาเอง <strong>ล็อกอินด้วยบัญชี Claude ของเรา</strong> แล้วกดปุ่มอนุญาต (Authorize)</li>
+    <li>กลับมาที่หน้าต่าง Terminal จะเห็นรหัสยาวๆ ที่ขึ้นต้นด้วย <code>sk-ant-oat01-</code></li>
+    <li>ลากเมาส์คลุมรหัสตั้งแต่ <code>sk-ant</code> จนถึงตัวสุดท้าย แล้วกด <kbd>⌘</kbd> + <kbd>C</kbd> เพื่อคัดลอก</li>
+  </ol>
+
+  <figure class="fig">
+    <div class="win" style="position:relative">
+      <div class="tb"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="title">Terminal</span></div>
+      <div class="term"><span class="p">~ %</span> claude setup-token
+<span class="g">(เบราว์เซอร์เปิดขึ้นมา ล็อกอิน แล้วกด Authorize)</span>
+
+✓ Long-lived authentication token created successfully!
+
+Your OAuth token (valid for 1 year):
+
+<span class="tok">sk-ant-oat01-Xq7Lm2Rt9vB4kN8pWc3Yh6Zs1Fd5Ga0Je2Kb7Mn4Pq9Rs3Tu8Vw1Xy6Za5Bc0De2Fg7Hi4Jk9Lm3No8Pq</span>
+
+Store this token securely. You won't be able to see it again.
+<span class="p">~ %</span> </div>
+      <span class="mk" style="left:23px;top:22%">1</span>
+      <span class="mk" style="left:23px;top:66%">2</span>
+    </div>
+    <ul class="legend">
+      <li><i>1</i>พิมพ์ <code>claude setup-token</code> ตรงนี้ แล้วกด Enter</li>
+      <li><i>2</i>รหัสที่ได้ (สีม่วงในภาพ) ยาวมาก อาจขึ้นหลายบรรทัด <strong>ให้คัดลอกทั้งหมด</strong> ไม่ต้องคัดลอกข้อความอื่น</li>
+    </ul>
+    <figcaption>ตัวอย่างหน้าจอ ข้อความจริงอาจต่างนิดหน่อย และรหัสจริงจะไม่เหมือนในภาพ</figcaption>
+  </figure>
+
+  <div class="note warn"><b>! ยังไม่ต้องปิด Terminal</b>เปิดหน้าต่างนี้ทิ้งไว้ก่อน ขั้นตอนที่ 4 ต้องกลับมาคัดลอกรหัสนี้อีกครั้ง</div>
+  <div class="note bad"><b>✕ รหัสนี้เหมือนรหัสผ่าน</b>ใครได้ไปก็ใช้โควตา Claude ของเราได้ อย่าส่งให้ใคร อย่าแคปหน้าจอแชร์ และอย่าวางลงในแชท</div>
+  <div class="note tip"><b>? ถ้า Terminal ขอให้ "วางโค้ด" (paste code)</b>ให้คัดลอกโค้ดที่หน้าเว็บแสดง มาวางใน Terminal แล้วกด Enter</div>
+</section>
+
+<!-- ═════════════ STEP 3 ═════════════ -->
+<section class="step" id="s3">
+  <div class="step-head"><div class="badge">3</div><h2>ล้างข้อมูลเก่าในเครื่อง</h2><span class="where">ที่ตัวเครื่อง</span></div>
+  <p>ขั้นนี้จะลบรหัสของบัญชีเดิมออกจากเครื่อง <strong>จังหวะสำคัญ:</strong> กด RST ก่อน แล้ว<strong>รีบ</strong>กด A กับ B ค้างไว้พร้อมกัน (มีเวลาแค่ประมาณครึ่งวินาที)</p>
+
+  <div class="tl">
+    <div>
+      <div class="device" style="padding:6px;border-radius:8px"><div class="lcd" style="background:#0b0b0b"></div></div>
+      <div class="cap"><b>①</b> กด <span class="tag r">RST</span> แล้ว<b>ปล่อย</b> จอจะดับไปแป๊บหนึ่ง</div>
+    </div>
+    <div>
+      <div class="device" style="padding:6px;border-radius:8px"><div class="lcd">
+        <span class="x s2 or" style="left:12.5%;top:16%">Claude Usage</span>
+        <div class="track" style="left:8%;top:44%;width:84%;height:10%"><div class="fill" style="width:30%;background:var(--head)"></div></div>
+        <span class="x s1 dim" style="left:8%;top:72%">Checking config...</span>
+      </div></div>
+      <div class="cap"><b>②</b> พอจอติด <b>ทันที</b> กด <span class="tag a">A</span> + <span class="tag b">B</span> ค้างไว้พร้อมกัน</div>
+    </div>
+    <div>
+      <div class="device" style="padding:6px;border-radius:8px"><div class="lcd">
+        <span class="x s2 or" style="left:12.5%;top:16%">Claude Usage</span>
+        <div class="track" style="left:8%;top:44%;width:84%;height:10%"><div class="fill" style="width:40%;background:var(--head)"></div></div>
+        <span class="x s1 dim" style="left:8%;top:72%">Hold A+B 2s...</span>
+      </div></div>
+      <div class="cap"><b>③</b> เห็น <span class="mono">Hold A+B 2s...</span> แปลว่าถูกจังหวะ <b>กดค้างต่อ</b> อย่าเพิ่งปล่อย</div>
+    </div>
+    <div>
+      <div class="device" style="padding:6px;border-radius:8px"><div class="lcd">
+        <span class="x s2 red" style="left:4%;top:24%">NVS WIPED</span>
+        <span class="x s1 dim" style="left:4%;top:48%">Rebooting in 2s...</span>
+      </div></div>
+      <div class="cap"><b>④</b> เห็น <span class="mono red">NVS WIPED</span> ปล่อยมือได้ ข้อมูลเก่าหายแล้ว</div>
+    </div>
+  </div>
+
+  <p>เครื่องจะเริ่มใหม่เอง แล้วขึ้นหน้าจอสีส้มที่เขียนว่า <span class="mono">SETUP MODE</span> ไปต่อขั้นตอนที่ 4 ได้เลย</p>
+
+  <div class="note warn"><b>! ถ้าจอขึ้น UNLOCK PIN แทน</b>แปลว่ากด A + B ช้าไปนิด ไม่เป็นไร ทำข้อ ① ใหม่อีกรอบ</div>
+  <div class="note warn"><b>! ถ้าจอดำไปเลย ไม่มีอะไรขึ้น</b>แปลว่ากด A ค้างไว้ก่อนกด RST เครื่องเลยเข้าโหมดพิเศษ ให้ปล่อยทุกปุ่ม แล้วกด RST อีกครั้งเฉยๆ จากนั้นเริ่มข้อ ① ใหม่</div>
+</section>
+
+<!-- ═════════════ STEP 4 ═════════════ -->
+<section class="step" id="s4">
+  <div class="step-head"><div class="badge">4</div><h2>ให้ Mac ต่อ WiFi ของเครื่อง แล้วกรอกข้อมูล</h2><span class="where">ที่ Mac + ดูหน้าจอเครื่อง</span></div>
+  <p>ตอนนี้เครื่องปล่อย WiFi ของตัวเองออกมา เราจะให้ Mac ต่อเข้า WiFi นั้น เพื่อเปิดหน้าตั้งค่า</p>
+
+  <h3>4.1 ดูชื่อและรหัส WiFi จากหน้าจอเครื่อง</h3>
+  <figure class="fig">
+    <div class="device"><div class="lcd">
+      <div class="hbar"><span class="x s1" style="left:2.5%">SETUP MODE</span></div>
+      <span class="x s1 dim" style="left:4%;top:18%">1. Connect to WiFi:</span>
+      <span class="x s2 cy" style="left:4%;top:28%">ClaudeMonitor-7F3A</span>
+      <span class="x s1 dim" style="left:4%;top:44%">Password:</span>
+      <span class="x s2 cy" style="left:4%;top:54%">K7QH2MXP</span>
+      <span class="x s1 dim" style="left:4%;top:72%">2. Open in browser:</span>
+      <span class="x s2 cy" style="left:4%;top:82%">192.168.4.1</span>
+      <span class="mk" style="left:92%;top:32%">1</span>
+      <span class="mk" style="left:46%;top:58%">2</span>
+      <span class="mk" style="left:52%;top:86%">3</span>
+    </div></div>
+    <ul class="legend">
+      <li><i>1</i>ชื่อ WiFi ของเครื่อง (ตัวท้าย 4 ตัวจะต่างจากในภาพ)</li>
+      <li><i>2</i>รหัส WiFi ของเครื่อง เป็นตัวพิมพ์ใหญ่กับตัวเลขเท่านั้น <strong>ไม่มีเลข 0 และ 1</strong> (ถ้าเห็นวงกลมหรือขีดตั้ง คือตัวอักษรอื่น เช่น Q, L)</li>
+      <li><i>3</i>ที่อยู่ของหน้าตั้งค่า ใช้ในข้อ 4.3</li>
+    </ul>
+    <figcaption>ชื่อและรหัสจะเปลี่ยนทุกครั้งที่เครื่องเริ่มใหม่ ให้ดูจากจอทุกครั้ง</figcaption>
+  </figure>
+
+  <h3>4.2 ให้ Mac ต่อ WiFi ของเครื่อง</h3>
+  <div class="two">
+    <div>
+      <ol class="do">
+        <li>คลิกไอคอน WiFi ที่มุมขวาบนของจอ Mac</li>
+        <li>เลือกชื่อ <code>ClaudeMonitor-....</code> ให้ตรงกับที่เห็นบนเครื่อง</li>
+        <li>ใส่รหัสจากหน้าจอเครื่อง แล้วกด Join</li>
+      </ol>
+      <div class="note tip"><b>✓ ปกติ</b>Mac จะบอกว่า "ไม่มีอินเทอร์เน็ต" ไม่เป็นไร เพราะ WiFi นี้มีไว้คุยกับเครื่องเท่านั้น</div>
+    </div>
+    <figure class="fig" style="margin-top:0">
+      <div class="menubar">
+        <span>ᯤ</span><span>⌕</span><span>อ. 3 พ.ย. 10:24</span>
+        <span class="mk" style="left:auto;right:150px;top:50%;transform:translate(50%,-50%)">1</span>
+      </div>
+      <div class="wifimenu">
+        <div class="row"><b>Wi-Fi</b><span class="sw"></span></div>
+        <div class="lbl">เครือข่ายที่รู้จัก</div>
+        <div class="row">≋ บ้าน-WiFi</div>
+        <div class="lbl">เครือข่ายอื่น</div>
+        <div class="row hl">≋ ClaudeMonitor-7F3A <span style="margin-left:auto">⚿</span></div>
+        <div class="row">≋ เพื่อนบ้าน-5G</div>
+        <span class="mk" style="left:96%;top:73%">2</span>
+      </div>
+    </figure>
+  </div>
+
+  <h3>4.3 เปิดหน้าตั้งค่า แล้วกรอกข้อมูล</h3>
+  <p>เปิด Safari แล้วพิมพ์ <code>192.168.4.1</code> ที่ช่องที่อยู่เว็บ แล้วกด Enter (บางที Mac จะเด้งหน้านี้ขึ้นมาเองในหน้าต่างเล็กๆ ก็กรอกในนั้นได้เลย)</p>
+
+  <div class="two">
+    <figure class="fig" style="margin-top:0">
+      <div class="win" style="max-width:400px;margin-right:30px">
+        <div class="tb"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="title">Safari</span></div>
+        <div style="background:#f3f1ee;padding:1px 0"><div class="addr">192.168.4.1</div></div>
+        <div class="portal"><div class="card">
+          <h4>Claude Usage Monitor</h4>
+          <div class="sub">One-time setup. Token is AES-256 encrypted on device only.</div>
+          <div class="sec">WiFi Network (2.4 GHz only)</div>
+          <div class="fld"><label>SSID</label><div class="in">บ้าน-WiFi</div><span class="mk">1</span></div>
+          <div class="fld"><label>Password</label><div class="in">••••••••••</div><span class="mk">2</span></div>
+          <hr>
+          <div class="sec">Claude Credentials</div>
+          <div class="fld"><label>OAuth Token</label><div class="in">•••••••••••••••••••••••</div><div class="hint">Run claude setup-token in terminal to generate (valid 1 year)</div><span class="mk">3</span></div>
+          <div class="fld"><label>Encryption PIN</label><div class="in" style="width:120px;text-align:center;letter-spacing:8px">••••</div><div class="hint">Exactly 4 digits. You'll enter this on device buttons at each boot.</div><span class="mk">4</span></div>
+          <hr>
+          <div class="sec">Preferences</div>
+          <div class="fld"><div class="rw"><div class="fld" style="margin:0"><label>Refresh interval</label><div class="in">60 sec</div></div><div class="fld" style="margin:0"><label>Screen brightness</label><div class="in">Normal</div></div></div><span class="mk">5</span></div>
+          <div class="fld"><label>Device name (header label)</label><div class="in ph">Claude Monitor</div><span class="mk">5</span></div>
+          <div class="fld"><div class="btn">Save &amp; Reboot Device</div><span class="mk">6</span></div>
+          <div class="okmsg">Saved! Device rebooting now...</div>
+        </div></div>
+      </div>
+      <figcaption>หน้าตั้งค่าจริงจากเครื่อง (เป็นภาษาอังกฤษ)</figcaption>
+    </figure>
+    <ul class="legend">
+      <li><i>1</i><strong>SSID</strong> = ชื่อ WiFi บ้าน พิมพ์ให้ตรงทุกตัว ตัวพิมพ์เล็ก-ใหญ่ต้องตรงด้วย ถ้าบ้านมี 2 ชื่อ เช่น <code>บ้าน</code> กับ <code>บ้าน-5G</code> ให้ใช้ชื่อที่<strong>ไม่มี 5G</strong></li>
+      <li><i>2</i><strong>Password</strong> = รหัส WiFi บ้าน</li>
+      <li><i>3</i><strong>OAuth Token</strong> = กลับไปที่ Terminal คัดลอกรหัส <code>sk-ant-oat01-...</code> จากขั้นตอนที่ 2 แล้วกด <kbd>⌘</kbd> + <kbd>V</kbd> วางในช่องนี้ (จะเห็นเป็นจุดๆ เป็นเรื่องปกติ)</li>
+      <li><i>4</i><strong>Encryption PIN</strong> = ตั้งเลข 4 ตัวเองเลย เช่น 2580 <strong>จดลงกระดาษทันที</strong> ต้องใช้ทุกครั้งที่เปิดเครื่อง ถ้าลืมต้องเริ่มใหม่หมด</li>
+      <li><i>5</i>ส่วนที่เหลือ<strong>ไม่ต้องแก้</strong> ปล่อยไว้แบบเดิม</li>
+      <li><i>6</i>กดปุ่ม <strong>Save &amp; Reboot Device</strong> ถ้าขึ้นข้อความสีเขียว แปลว่าเรียบร้อย เครื่องจะเริ่มใหม่เอง</li>
+    </ul>
+  </div>
+
+  <div class="note warn"><b>! อย่าลืมเปลี่ยน WiFi ของ Mac กลับ</b>คลิกไอคอน WiFi แล้วเลือก WiFi บ้านเหมือนเดิม ไม่งั้น Mac จะไม่มีอินเทอร์เน็ต จากนั้นปิดหน้าต่าง Terminal ได้แล้ว</div>
+</section>
+
+<!-- ═════════════ STEP 5 ═════════════ -->
+<section class="step" id="s5">
+  <div class="step-head"><div class="badge">5</div><h2>ใส่ PIN บนเครื่อง</h2><span class="where">ที่ตัวเครื่อง</span></div>
+  <p>เครื่องเริ่มใหม่แล้วจะขึ้นหน้า <span class="mono">UNLOCK PIN</span> ให้ใส่เลข 4 ตัวที่ตั้งไว้ในขั้นตอนที่ 4 โดยใช้ 2 ปุ่ม:</p>
+
+  <div class="two">
+    <figure class="fig" style="margin-top:0">
+      <div class="device"><div class="lcd">
+        <div class="hbar"><span class="x s1" style="left:1.25%">CLAUDEOMETER</span><span class="x s1" style="right:1.25%">LOCKED</span></div>
+        <span class="x s1 dim" style="left:40.6%;top:26%">UNLOCK PIN</span>
+        <div class="pbox" style="left:15.6%;top:36.5%;width:12.5%;height:26.5%;border-color:#7b7b7b"><span class="s3 or">*</span></div>
+        <div class="pbox on" style="left:33.1%;top:36.5%;width:12.5%;height:26.5%"><span class="s3">5</span></div>
+        <div class="pbox" style="left:50.6%;top:36.5%;width:12.5%;height:26.5%"></div>
+        <div class="pbox" style="left:68.1%;top:36.5%;width:12.5%;height:26.5%"></div>
+        <span class="x s1 dim" style="left:24%;top:70%">[A] cycle digit   [B] confirm</span>
+        <span class="x s1 gray" style="left:21%;top:82%">Hold A+B on boot = factory reset</span>
+        <span class="mk" style="left:28.1%;top:63%">1</span>
+        <span class="mk" style="left:45.6%;top:63%">2</span>
+      </div></div>
+      <ul class="legend">
+        <li><i>1</i>ช่องที่ใส่เสร็จแล้ว จะซ่อนเป็นดอกจัน <span class="mono or">*</span></li>
+        <li><i>2</i>ช่องที่กำลังใส่ (กรอบสีส้ม) เริ่มที่เลข 0 เสมอ</li>
+      </ul>
+    </figure>
+    <div>
+      <table class="keys">
+        <tr><th>ปุ่ม</th><th>ทำอะไร</th></tr>
+        <tr><td><span class="tag a">A</span></td><td>เพิ่มเลขในช่องทีละ 1 (หลัง 9 จะวนกลับเป็น 0)</td></tr>
+        <tr><td><span class="tag b">B</span></td><td>ยืนยันเลขนี้ แล้วไปช่องถัดไป</td></tr>
+      </table>
+      <div class="note warn"><b>! ย้อนกลับไม่ได้</b>ถ้ากดเลยเลขที่ต้องการ ให้กด A ต่อจนวนกลับมา แต่ถ้ากด B ไปแล้ว แก้ช่องนั้นไม่ได้ ให้ใส่ให้ครบ แล้วรอลองใหม่</div>
+    </div>
+  </div>
+
+  <h3>ตัวอย่าง: ถ้า PIN คือ 2580</h3>
+  <div class="pinex">
+    <div><div class="big">2</div><div class="presses"><span class="chip a">A</span><span class="chip a">A</span><span class="chip b">B</span></div></div>
+    <div><div class="big">5</div><div class="presses"><span class="chip a">A</span><span class="chip a">A</span><span class="chip a">A</span><span class="chip a">A</span><span class="chip a">A</span><span class="chip b">B</span></div></div>
+    <div><div class="big">8</div><div class="presses"><span class="chip a">A</span><span class="chip a">A</span><span class="chip a">A</span><span class="chip a">A</span><span class="chip a">A</span><span class="chip a">A</span><span class="chip a">A</span><span class="chip a">A</span><span class="chip b">B</span></div></div>
+    <div><div class="big">0</div><div class="presses"><span class="chip b">B</span></div></div>
+  </div>
+  <p style="font-size:.92rem;color:var(--muted);text-align:center">กด A เท่ากับตัวเลขนั้น แล้วกด B · ถ้าเลขคือ 0 กด B อย่างเดียว</p>
+
+  <h3>ถ้าใส่ผิด</h3>
+  <div class="two">
+    <div class="device"><div class="lcd">
+      <span class="x s2 red" style="left:4%;top:16%">WRONG PIN</span>
+      <span class="x s1 dim" style="left:4%;top:36%">Attempt 1 of 10</span>
+      <span class="x s1 dim" style="left:4%;top:48%">Locked for 60 seconds</span>
+      <span class="x s2 amb" style="left:4%;top:62%">42s</span>
+    </div></div>
+    <p>เครื่องจะให้รอก่อน ครั้งแรกรอ 1 นาที ยิ่งผิดบ่อยยิ่งรอนาน พอนับถอยหลังเสร็จ จะกลับมาหน้าใส่ PIN ให้ลองใหม่ <strong>ถ้าผิดครบ 10 ครั้ง เครื่องจะลบข้อมูลเอง</strong> แล้วต้องเริ่มขั้นตอนที่ 4 ใหม่</p>
+  </div>
+
+  <div class="note tip"><b>✓ ต้องใส่ PIN ทุกครั้งที่เครื่องเริ่มใหม่</b>เช่น แบตหมด หรือกด RST เป็นเรื่องปกติ เพราะเครื่องล็อกรหัส token ไว้ด้วย PIN นี้</div>
+</section>
+
+<!-- ═════════════ STEP 6 ═════════════ -->
+<section class="step" id="s6">
+  <div class="step-head"><div class="badge">6</div><h2>เสร็จแล้ว! อ่านหน้าจอยังไง</h2><span class="where">ใช้งานทุกวัน</span></div>
+  <p>ใส่ PIN ถูกแล้ว เครื่องจะต่อ WiFi บ้าน แล้วแสดงโควตาของบัญชีเรา ตัวเลขจะอัปเดตเองทุกนาที</p>
+
+  <figure class="fig">
+    <div class="device"><div class="lcd">
+      <div class="hbar">
+        <span class="x s1" style="left:1.25%">CLAUDEOMETER</span>
+        <span class="x" style="left:59%;width:2.6cqw;height:2.6cqw;border-radius:50%;background:#ffa500"></span>
+        <span class="x s1" style="left:64%">12s</span>
+        <span class="x s1" style="left:73.5%">ᯤ</span>
+        <span class="x" style="left:79%;width:5.6cqw;height:3.1cqw;border:1px solid #fff"></span>
+        <span class="x s1" style="left:87.5%">87%</span>
+      </div>
+      <span class="x s1" style="left:3.1%;top:17%">5-HOUR</span><span class="x s1" style="right:3.1%;top:17%">54%</span>
+      <div class="track" style="left:3.1%;top:25%;width:93.8%;height:7.5%"><div class="fill" style="width:54%"></div></div>
+      <span class="x s1" style="left:3.1%;top:38%">7-DAY</span><span class="x s1" style="right:3.1%;top:38%">12%</span>
+      <div class="track" style="left:3.1%;top:46%;width:93.8%;height:7.5%"><div class="fill" style="width:12%"></div></div>
+      <span class="x s1 dim" style="left:3.1%;top:59%">5H RESET</span><span class="x s1 dim" style="left:53.1%;top:59%">7D RESET</span>
+      <span class="x s2" style="left:3.1%;top:66%">2h14m</span><span class="x s2" style="left:53.1%;top:66%">3d05h</span>
+      <svg class="clawd" style="left:7.5%;top:76%;width:10%;fill:#cc6699"><use href="#clawd"/></svg>
+      <svg class="clawd" style="left:31.5%;top:76%;width:10%;fill:#b4aa14"><use href="#clawd"/></svg>
+      <svg class="clawd" style="left:56.5%;top:76%;width:10%;fill:#ef7139"><use href="#clawd"/></svg>
+      <svg class="clawd" style="left:81.5%;top:76%;width:10%;fill:#ff2a2a"><use href="#clawd"/></svg>
+      <span class="x s1 dim" style="left:8.5%;top:91%">HAIKU</span><span class="x s1 dim" style="left:31%;top:91%">SONNET</span>
+      <span class="x s1 dim" style="left:58%;top:91%">OPUS</span><span class="x s1 dim" style="left:82%;top:91%">FABLE</span>
+      <span class="mk" style="left:20%;top:-6%">1</span>
+      <span class="mk" style="left:60%;top:-6%">2</span>
+      <span class="mk" style="left:82%;top:-6%">3</span>
+      <span class="mk" style="left:103%;top:21%">4</span>
+      <span class="mk" style="left:103%;top:42%">5</span>
+      <span class="mk" style="left:103%;top:66%">6</span>
+      <span class="mk" style="left:103%;top:86%">7</span>
+    </div></div>
+    <ul class="legend">
+      <li><i>1</i>ชื่อเครื่อง</li>
+      <li><i>2</i>จุดเตือน: <span style="color:#b26b00;font-weight:700">● สีเหลือง</span> = ใช้รอบ 5 ชั่วโมงไปเกินครึ่ง · <span style="color:var(--bad);font-weight:700">● สีแดง</span> = เกิน 80% ใกล้หมดแล้ว (ตอนแตะ 80% จอจะกะพริบแดงหนึ่งครั้ง)</li>
+      <li><i>3</i>อัปเดตล่าสุดเมื่อกี่วินาทีที่แล้ว · สัญญาณ WiFi · แบตเตอรี่</li>
+      <li><i>4</i><strong>5-HOUR</strong> = ใช้ Claude ไปกี่ % ของรอบ 5 ชั่วโมง ถ้าถึง 100% ต้องรอรอบใหม่</li>
+      <li><i>5</i><strong>7-DAY</strong> = ใช้ไปกี่ % ของรอบ 7 วัน</li>
+      <li><i>6</i><strong>RESET</strong> = อีกนานเท่าไรจะกลับเป็น 0% เช่น <span class="mono">2h14m</span> = อีก 2 ชั่วโมง 14 นาที, <span class="mono">3d05h</span> = อีก 3 วัน 5 ชั่วโมง</li>
+      <li><i>7</i>ตัวการ์ตูน 4 ตัว = สถานะระบบ Claude แต่ละรุ่น ถ้ากะพริบตาเป็นระยะ = ปกติ ถ้าเป็น<strong>สีเทา</strong> = รุ่นนั้นมีปัญหา (จะมี <span class="mono red">!M</span> สีแดงขึ้นบนแถบด้วย)</li>
+    </ul>
+    <figcaption>ตัวเลขในภาพเป็นตัวอย่าง</figcaption>
+  </figure>
+
+  <h3>หน้าจอมี 4 หน้า กด A สั้นๆ เพื่อเปลี่ยนหน้า</h3>
+  <div class="mini">
+    <div><div class="device"><div class="lcd">
+      <div class="hbar"></div>
+      <div class="track" style="left:3%;top:25%;width:94%;height:8%"><div class="fill" style="width:54%"></div></div>
+      <div class="track" style="left:3%;top:46%;width:94%;height:8%"><div class="fill" style="width:12%"></div></div>
+      <svg class="clawd" style="left:6%;top:72%;width:14%;fill:#cc6699"><use href="#clawd"/></svg>
+      <svg class="clawd" style="left:30%;top:72%;width:14%;fill:#b4aa14"><use href="#clawd"/></svg>
+      <svg class="clawd" style="left:55%;top:72%;width:14%;fill:#ef7139"><use href="#clawd"/></svg>
+      <svg class="clawd" style="left:80%;top:72%;width:14%;fill:#ff2a2a"><use href="#clawd"/></svg>
+    </div></div><p>① โควตา (หน้าหลัก)</p></div>
+    <div><div class="device"><div class="lcd">
+      <div class="hbar"></div>
+      <svg style="position:absolute;left:3%;top:16%;width:94%;height:48%" viewBox="0 0 100 50" preserveAspectRatio="none">
+        <rect x="0.5" y="0.5" width="99" height="49" fill="none" stroke="#a24a20"/>
+        <polyline points="1,46 15,42 30,36 45,30 60,27 75,20 99,14" fill="none" stroke="#ef7139" stroke-width="1.5"/>
+      </svg>
+      <span class="x s1" style="left:3%;top:72%;font-size:6cqw">5H 54%</span>
+    </div></div><p>② กราฟการใช้ 5 ชม.</p></div>
+    <div><div class="device"><div class="lcd">
+      <div class="hbar"></div>
+      <span class="x s1 dim" style="left:3%;top:20%;font-size:6cqw;line-height:1.4">IP<br>WiFi<br>Bat<br>FW</span>
+      <span class="x s1" style="left:30%;top:20%;font-size:6cqw;line-height:1.4">192.168.1.42<br>-58 dBm<br>87%<br>2.2.0</span>
+    </div></div><p>③ ข้อมูลเครื่อง</p></div>
+    <div><div class="device"><div class="lcd">
+      <div class="hbar"></div>
+      <span class="x" style="left:50%;top:30%;transform:translateX(-50%);font-size:26cqw;font-weight:600">10:24</span>
+      <span class="x s1" style="left:50%;top:80%;transform:translateX(-50%);font-size:7cqw">5h reset 12:38</span>
+    </div></div><p>④ นาฬิกา</p></div>
+  </div>
+
+  <h3>สรุปปุ่ม (ตอนใช้งานปกติ)</h3>
+  <table class="keys">
+    <tr><th style="width:38%">ทำแบบนี้</th><th>ผลที่ได้</th></tr>
+    <tr><td>กดปุ่มไหนก็ได้ ตอนจอหรี่</td><td>ปลุกจอให้สว่าง (จอจะหรี่เองถ้าไม่ได้แตะสักพัก)</td></tr>
+    <tr><td>กด <span class="tag a">A</span> สั้นๆ</td><td>ไปหน้าถัดไป</td></tr>
+    <tr><td>กด <span class="tag a">A</span> ค้างประมาณ 1 วินาที</td><td>กลับหัวหน้าจอ (หมุน 180°) ไว้ใช้ตอนวางเครื่องกลับด้าน</td></tr>
+    <tr><td>กด <span class="tag b">B</span></td><td>เปลี่ยนความสว่าง: ปิดจอ → หรี่ → ปกติ → สว่าง → วนใหม่<br><span style="color:var(--muted);font-size:.9em">ถ้าจอดับไปเลย ให้กด B อีกครั้ง</span></td></tr>
+    <tr><td>กด <span class="tag a">A</span> + <span class="tag b">B</span> พร้อมกัน</td><td>ดึงตัวเลขล่าสุดทันที ไม่ต้องรอ</td></tr>
+    <tr><td>กด <span class="tag r">RST</span></td><td>เริ่มเครื่องใหม่ (ต้องใส่ PIN อีกครั้ง)</td></tr>
+  </table>
+</section>
+
+<!-- ═════════════ FAQ ═════════════ -->
+<section class="step">
+  <div class="step-head"><div class="badge">?</div><h2>ถ้ามีปัญหา</h2></div>
+
+  <details><summary>จอขึ้น WIFI FAILED</summary>
+    <p>เครื่องต่อ WiFi บ้านไม่ได้ ส่วนมากเพราะพิมพ์ชื่อหรือรหัสผิด หรือเลือก WiFi แบบ 5G เครื่องจะเปิดหน้า <span class="mono">SETUP MODE</span> ให้เอง ทำขั้นตอนที่ 4 ใหม่ แต่รอบนี้หน้าเว็บจะถามแค่ชื่อและรหัส WiFi (ชื่อหน้าว่า <span class="mono">Change WiFi</span>) <strong>token กับ PIN ยังอยู่ ไม่ต้องใส่ใหม่</strong></p>
+  </details>
+
+  <details><summary>Mac หาชื่อ ClaudeMonitor ไม่เจอ</summary>
+    <p>ดูว่าจอเครื่องยังขึ้น <span class="mono">SETUP MODE</span> อยู่ไหม แล้วรอสัก 10 วินาที ลองปิดแล้วเปิด WiFi บน Mac ใหม่ ชื่อจะเปลี่ยนทุกครั้งที่เครื่องเริ่มใหม่ ให้ดูชื่อจากจอเครื่องเสมอ</p>
+  </details>
+
+  <details><summary>พิมพ์ 192.168.4.1 แล้วหน้าเว็บไม่ขึ้น</summary>
+    <p>Mac อาจเด้งกลับไปต่อ WiFi บ้านเอง เพราะ WiFi ของเครื่องไม่มีอินเทอร์เน็ต ให้คลิกไอคอน WiFi แล้วดูว่ายังต่อ <code>ClaudeMonitor-....</code> อยู่ไหม ถ้าไม่ใช่ ให้เลือกใหม่ ลองพิมพ์เต็มๆ ว่า <code>http://192.168.4.1</code></p>
+  </details>
+
+  <details><summary>จอขึ้น ERROR ค้างนานเกิน 5 นาที</summary>
+    <p>ถ้า WiFi ต่อได้แต่ขึ้น ERROR ตลอด แปลว่ารหัส token อาจคัดลอกมาไม่ครบ ให้ทำใหม่ตั้งแต่ขั้นตอนที่ 2 (สร้าง token ใหม่) แล้วขั้นตอนที่ 3 (ล้างเครื่อง) ต่อเลย</p>
+  </details>
+
+  <details><summary>ลืม PIN</summary>
+    <p>ไม่มีทางกู้ได้ ต้องเริ่มใหม่ตั้งแต่ขั้นตอนที่ 2 สร้าง token ใหม่ ล้างเครื่อง แล้วตั้ง PIN ใหม่</p>
+  </details>
+
+  <details><summary>ใส่ PIN ผิดครบ 10 ครั้ง</summary>
+    <p>เครื่องจะลบข้อมูลทั้งหมดเองแล้วขึ้น <span class="mono">SETUP MODE</span> ข้ามขั้นตอนที่ 3 ไปเริ่มขั้นตอนที่ 4 ได้เลย ถ้าปิด Terminal ไปแล้ว ให้ทำขั้นตอนที่ 2 ก่อนเพื่อสร้าง token ใหม่</p>
+  </details>
+
+  <details><summary>ผ่านไป 1 ปี ตัวเลขไม่ขึ้นแล้ว</summary>
+    <p>token ใช้ได้ 1 ปี พอหมดอายุให้ทำตามคู่มือนี้ใหม่ทั้งหมดตั้งแต่ขั้นตอนที่ 2</p>
+  </details>
+</section>
+
+<footer>คู่มือนี้ทำสำหรับเครื่อง LILYGO T-Display S3 ที่ลงโปรแกรม claude-usage-stick (เวอร์ชัน 2.2.0)</footer>
+</div>
+</body>
+</html>

@@ -689,7 +689,7 @@ static void drawTopBar(TFT_eSPI& g, int rssi, unsigned long ago, int batPct) {
     g.setTextColor(C_TEXT, C_HEAD);
     g.setTextSize(TS(1));
     g.setCursor(SX(4), SY(5));
-    g.print("ARMNO'S CLAUDEOMETER");
+    g.print("CLAUDEOMETER");
     drawHeaderRight(g, rssi, ago, batPct);
 }
 
@@ -970,7 +970,7 @@ void uiPinScreen(int pos, const int digits[4]) {
     g.setTextColor(C_TEXT, C_HEAD);
     g.setTextSize(1);
     g.setCursor(4, 5);
-    g.print("ARMNO'S CLAUDEOMETER");
+    g.print("CLAUDEOMETER");
     g.setCursor(SCREEN_W - 4 - 6 * 6, 5);
     g.print("LOCKED");
     g.setTextColor(C_DIM, C_BG);
@@ -1097,7 +1097,7 @@ void uiDashboard(const UsageData& data, unsigned long lastFetchMs, int rssi, int
     g.setTextColor(C_TEXT, C_HEAD);
     g.setTextSize(TS(1));
     g.setCursor(SX(4), SY(5));
-    g.print("ARMNO'S CLAUDEOMETER");
+    g.print("CLAUDEOMETER");
 
     unsigned long ago = (millis() - lastFetchMs) / 1000;
 #ifdef MANGO_UI
